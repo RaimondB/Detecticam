@@ -1,0 +1,1 @@
+C:\Users\raimo\OneDrive\Repos\Cognitive-Samples-VideoFrameAnalysis\Windows\Codocker save -o ..\..\camerawatcher.tar camerawatcher:1.0

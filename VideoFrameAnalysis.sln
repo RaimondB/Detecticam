@@ -1,0 +1,47 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreConsole", "CoreConsole\CoreConsole.csproj", "{58175C48-520B-4A9D-A114-4EE268C4C663}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{94B75B7B-7D23-4CE7-AD2C-F8D3FF0AB214}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		..\opencv\install-opencv-linux.sh = ..\opencv\install-opencv-linux.sh
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "YoloData", "YoloData", "{83C213E2-2C0F-428C-819A-754EE6D30523}"
+	ProjectSection(SolutionItems) = preProject
+		YoloData\coco.names = YoloData\coco.names
+		YoloData\yolov3.cfg = YoloData\yolov3.cfg
+		YoloData\yolov3.weights = YoloData\yolov3.weights
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VideoFrameAnalyzeCore", "VideoFrameAnalyzeCore\VideoFrameAnalyzeCore.csproj", "{2D87F087-034F-42DC-A830-1C8B5714CBCC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{58175C48-520B-4A9D-A114-4EE268C4C663}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58175C48-520B-4A9D-A114-4EE268C4C663}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58175C48-520B-4A9D-A114-4EE268C4C663}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58175C48-520B-4A9D-A114-4EE268C4C663}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D87F087-034F-42DC-A830-1C8B5714CBCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D87F087-034F-42DC-A830-1C8B5714CBCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D87F087-034F-42DC-A830-1C8B5714CBCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D87F087-034F-42DC-A830-1C8B5714CBCC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{83C213E2-2C0F-428C-819A-754EE6D30523} = {94B75B7B-7D23-4CE7-AD2C-F8D3FF0AB214}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {74E87FB9-4431-4EFE-8E42-8FB61547F697}
+	EndGlobalSection
+EndGlobal
