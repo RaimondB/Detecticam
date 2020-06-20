@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace VideoFrameAnalyzeStd.Detection
+﻿namespace VideoFrameAnalyzeStd.Detection
 {
     public class Yolo3Options
     {

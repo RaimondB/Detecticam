@@ -2,21 +2,20 @@
 // Uncomment this to enable the LogMessage function, which can with debugging timing issues.
 #define TRACE_GRABBER
 
-using OpenCvSharp;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using VideoFrameAnalyzeStd.VideoCapturing;
-using System.Linq;
-using System.Globalization;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using System.Drawing;
 using VideoFrameAnalyzeCore.VideoCapturing;
-using System.Diagnostics.CodeAnalysis;
+using VideoFrameAnalyzeStd.VideoCapturing;
 
 namespace VideoFrameAnalyzer
 {
@@ -61,6 +60,8 @@ namespace VideoFrameAnalyzer
         //    }
         //}
 
+        public Channel<AnalysisResult<TAnalysisResultType>> OutputChannel { get; }
+
         #endregion Properties
 
         #region Fields
@@ -80,7 +81,8 @@ namespace VideoFrameAnalyzer
 
         #region Methods
 
-        public MultiStreamBatchedFrameGrabber([DisallowNull] ILogger<MultiStreamBatchedFrameGrabber<TAnalysisResultType>> logger, 
+
+        public MultiStreamBatchedFrameGrabber([DisallowNull] ILogger<MultiStreamBatchedFrameGrabber<TAnalysisResultType>> logger,
                                               [DisallowNull] IConfiguration configuration)
         {
             if (logger is null) throw new ArgumentNullException(nameof(logger));
@@ -93,6 +95,8 @@ namespace VideoFrameAnalyzer
 
             _logger.LogInformation("Loaded configuration for {numberOfStreams} streams:{streamIds}", _streamsConfig.Count,
                 String.Join(",", _streamsConfig.Select(s => s.Id)));
+
+            OutputChannel = CreateOutputChannel();
         }
 
         /// <summary> (Only available in TRACE_GRABBER builds) logs a message. </summary>
@@ -116,7 +120,7 @@ namespace VideoFrameAnalyzer
             _logger.LogDebug(String.Format(CultureInfo.InvariantCulture, format, args));
         }
 
-        protected async Task<NewResultsEventArgs<TAnalysisResultType>?> DoAnalyzeFrames(IList<VideoFrame> frames)
+        protected async Task<AnalysisResult<TAnalysisResultType>?> DoAnalyzeFrames(IList<VideoFrame> frames)
         {
             using CancellationTokenSource source = new CancellationTokenSource();
             // Make a local reference to the function, just in case someone sets
@@ -124,7 +128,7 @@ namespace VideoFrameAnalyzer
             var fcn = AnalysisFunction;
             if (fcn != null)
             {
-                var output = new NewResultsEventArgs<TAnalysisResultType>(frames);
+                var output = new AnalysisResult<TAnalysisResultType>(frames);
                 var task = fcn(frames);
                 LogDebug("DoAnalysis: started task {0}", task.Id);
                 try
@@ -175,7 +179,7 @@ namespace VideoFrameAnalyzer
                     SingleWriter = true
                 });
 
-        private static Channel<IList<VideoFrame>> CreateMergeChannel() =>
+        private static Channel<IList<VideoFrame>> CreateMultiFrameChannel() =>
             Channel.CreateBounded<IList<VideoFrame>>(
         new BoundedChannelOptions(2)
         {
@@ -184,6 +188,15 @@ namespace VideoFrameAnalyzer
             SingleReader = true,
             SingleWriter = true
         });
+
+        private static Channel<AnalysisResult<TAnalysisResultType>> CreateOutputChannel() =>
+            Channel.CreateUnbounded<AnalysisResult<TAnalysisResultType>>(
+            new UnboundedChannelOptions()
+            {
+                AllowSynchronousContinuations = false,
+                SingleReader = true,
+                SingleWriter = true
+            });
 
         private readonly List<Channel<VideoFrame>> _capturingChannels = new List<Channel<VideoFrame>>();
 
@@ -225,7 +238,7 @@ namespace VideoFrameAnalyzer
                     List<T> results = new List<T>();
 
                     for (var index = 0; index < readers.Length; index++)
-                    {    
+                    {
                         try
                         {
                             var result = await readers[index].ReadAsync().ConfigureAwait(false);
@@ -239,7 +252,10 @@ namespace VideoFrameAnalyzer
                             //Just continue to next on errors or timeouts
                         }
                     }
-                    await writer.WriteAsync(results).ConfigureAwait(false);
+                    if(!writer.TryWrite(results))
+                    {
+                        LogWarning("Could not write merged result!");
+                    }
 
                     await Task.Delay(mergeDelay).ConfigureAwait(false);
                 }
@@ -252,13 +268,14 @@ namespace VideoFrameAnalyzer
         ///     function will get called once per frame. </param>
         public void StartProcessingAll()
         {
-            var analysisChannel = CreateMergeChannel();
+            var analysisChannel = CreateMultiFrameChannel();
             _mergeTask = MergeChannels(_capturingChannels, analysisChannel, _analysisInterval);
 
             LogMessage("Starting Consumer Task");
             _consumerTask = Task.Run(async () =>
             {
                 var reader = analysisChannel.Reader;
+                var writer = OutputChannel.Writer;
 
                 while (!_stopping)
                 {
@@ -276,7 +293,7 @@ namespace VideoFrameAnalyzer
                         {
                             LogMessage("Consumer: analysis took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
-                            OnNewResultAvailable(result);
+                            await writer.WriteAsync(result).ConfigureAwait(false);
                         }
                         else
                         {
@@ -330,20 +347,6 @@ namespace VideoFrameAnalyzer
             _stopping = false;
         }
 
-        /// <summary> Raises the new frame provided event. </summary>
-        /// <param name="frame"> The frame. </param>
-        protected void OnNewFrameProvided(IList<VideoFrame> frames)
-        {
-            NewFramesProvided?.Invoke(this, new NewFramesEventArgs(frames));
-        }
-
-        /// <summary> Raises the new result event. </summary>
-        /// <param name="args"> Event information to send to registered event handlers. </param>
-        protected void OnNewResultAvailable(NewResultsEventArgs<TAnalysisResultType> args)
-        {
-            NewResultsAvailable?.Invoke(this, args);
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -367,12 +370,5 @@ namespace VideoFrameAnalyzer
         }
 
         #endregion Methods
-
-        #region Events
-
-        public event EventHandler<NewFramesEventArgs>? NewFramesProvided;
-        public event EventHandler<NewResultsEventArgs<TAnalysisResultType>>? NewResultsAvailable;
-
-        #endregion Events
     }
 }

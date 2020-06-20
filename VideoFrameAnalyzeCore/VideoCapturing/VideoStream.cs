@@ -3,10 +3,8 @@
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using System;
-using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Globalization;
-using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using VideoFrameAnalyzer;
@@ -34,10 +32,10 @@ namespace VideoFrameAnalyzeStd.VideoCapturing
         private bool disposedValue;
         private Task? _executionTask;
         private readonly ILogger _logger;
-        public VideoStreamInfo Info {get;} 
+        public VideoStreamInfo Info { get; }
 
         public VideoStream(ILogger logger, string streamName, string path, double fps = 0, bool isContinuous = true, RotateFlags? rotateFlags = null)
-            : this(logger, new VideoStreamInfo() { Id = streamName, Path = path, Fps = fps, IsContinuous = isContinuous, RotateFlags = rotateFlags})
+            : this(logger, new VideoStreamInfo() { Id = streamName, Path = path, Fps = fps, IsContinuous = isContinuous, RotateFlags = rotateFlags })
         {
         }
 

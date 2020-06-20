@@ -1,15 +1,12 @@
 ﻿#nullable enable
 
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using VideoFrameAnalyzer;
 using VideoFrameAnalyzeStd.Detection;
@@ -36,7 +33,7 @@ namespace CameraWatcher
                         config.AddJsonFile(Path.GetFullPath("appsettings.json", configPath));
                     }
                 }
-                if(String.IsNullOrEmpty(configPath))
+                if (String.IsNullOrEmpty(configPath))
                 {
                     configPath = Directory.GetCurrentDirectory();
                     Console.WriteLine($"ConfigDir not found, falling back to default location:{configPath}");

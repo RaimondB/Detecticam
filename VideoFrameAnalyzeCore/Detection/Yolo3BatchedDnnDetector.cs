@@ -6,8 +6,6 @@ using OpenCvSharp;
 using OpenCvSharp.Dnn;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using VideoFrameAnalyzeStd.Detection;
@@ -194,10 +192,10 @@ namespace VideoFrameAnalyzer
             int dim2MaxIndex = -1;
             float dim2MaxValue = 0;
 
-            for(int dim2Index = dim2Range.Start; dim2Index <= dim2Range.End; dim2Index++)
+            for (int dim2Index = dim2Range.Start; dim2Index <= dim2Range.End; dim2Index++)
             {
                 var curValue = inputMatrix.At<float>(dim0Index, dim1Index, dim2Index);
-                if(curValue > dim2MaxValue)
+                if (curValue > dim2MaxValue)
                 {
                     dim2MaxIndex = dim2Index;
                     dim2MaxValue = curValue;

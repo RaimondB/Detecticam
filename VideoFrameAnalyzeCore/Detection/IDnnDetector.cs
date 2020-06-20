@@ -1,7 +1,4 @@
 ﻿using OpenCvSharp;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using VideoFrameAnalyzer;
 
 namespace VideoFrameAnalyzeStd.Detection

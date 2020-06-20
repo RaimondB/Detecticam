@@ -46,7 +46,7 @@ namespace VideoFrameAnalyzer
         public DateTime Timestamp { get; set; }
         public int Index { get; set; }
 
-        public VideoStreamInfo Info { get; set;}
+        public VideoStreamInfo Info { get; set; }
     }
 
     /// <summary> A video frame produced by the <see cref="FrameGrabber{AnalysisResultType}"/>.

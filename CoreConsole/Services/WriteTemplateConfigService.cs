@@ -3,18 +3,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OpenCvSharp;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using VideoFrameAnalyzer;
-using VideoFrameAnalyzeStd.Detection;
 
 namespace CameraWatcher
 {
@@ -25,7 +17,7 @@ namespace CameraWatcher
         private readonly ILogger _logger;
         private readonly IHostApplicationLifetime _appLifetime;
 
-        public WriteTemplateConfigService( ILogger<WriteTemplateConfigService> logger,
+        public WriteTemplateConfigService(ILogger<WriteTemplateConfigService> logger,
                                        IHostApplicationLifetime appLifetime,
                                        IConfiguration configRoot)
         {
@@ -36,7 +28,7 @@ namespace CameraWatcher
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-//            _appLifetime.ApplicationStarted.Register(OnStarted, false);
+            //            _appLifetime.ApplicationStarted.Register(OnStarted, false);
 
             var outputDirectory = ((IConfiguration)ConfigRoot).GetValue<string>("ConfigDir");
 

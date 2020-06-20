@@ -2,10 +2,6 @@
 
 using OpenCvSharp;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace VideoFrameAnalyzeStd.VideoCapturing
 {
@@ -17,12 +13,13 @@ namespace VideoFrameAnalyzeStd.VideoCapturing
         public double Fps { get; set; }
         public bool IsContinuous { get; set; } = true;
 
-        public string? Rotate { 
+        public string? Rotate
+        {
             get
             {
                 return _rotateFlags?.ToString();
             }
-            
+
             set
             {
                 if (Enum.TryParse<RotateFlags>(value, out var rotateFlags))
@@ -40,7 +37,8 @@ namespace VideoFrameAnalyzeStd.VideoCapturing
 
         private RotateFlags? _rotateFlags = null;
 
-        public RotateFlags? RotateFlags { 
+        public RotateFlags? RotateFlags
+        {
             get
             {
                 return _rotateFlags;
