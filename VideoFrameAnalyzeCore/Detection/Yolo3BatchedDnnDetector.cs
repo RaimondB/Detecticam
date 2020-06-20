@@ -1,10 +1,13 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿#nullable enable
+
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using OpenCvSharp.Dnn;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using VideoFrameAnalyzeStd.Detection;
@@ -15,29 +18,36 @@ namespace VideoFrameAnalyzer
     public class Yolo3BatchedDnnDetector : IBatchedDnnDetector
     {
         private readonly ILogger _logger;
-        private readonly IConfiguration _configuration;
 
         //YOLOv3
         //https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg
-        private string Cfg;
+        private readonly string Cfg;
 
         //https://pjreddie.com/media/files/yolov3.weights
-        private string Weight;
+        private readonly string Weight;
 
         //https://github.com/pjreddie/darknet/blob/master/data/coco.names
-        private string Names;
+        private readonly string Names;
 
         private readonly Scalar[] Colors;
         private readonly string[] Labels;
         private readonly OpenCvSharp.Dnn.Net nnet;
-        private Mat[] outs;
+        private readonly Mat[] outs;
         private readonly string[] _outNames;
 
         public Yolo3BatchedDnnDetector(ILogger<IDnnDetector> logger, IConfiguration configuration)
         {
+            if (configuration is null) throw new ArgumentNullException(nameof(configuration));
+            if (logger is null) throw new ArgumentNullException(nameof(logger));
+
             _logger = logger;
-            _configuration = configuration;
-            ReadConfig(configuration);
+
+            var options = new Yolo3Options();
+            configuration.GetSection(Yolo3Options.Yolo3).Bind(options);
+
+            Cfg = Path.Combine(options.RootPath, options.ConfigFile);
+            Weight = Path.Combine(options.RootPath, options.WeightsFile);
+            Names = Path.Combine(options.RootPath, options.NamesFile);
 
             //random assign color to each label
             Labels = File.ReadAllLines(Names).ToArray();
@@ -48,18 +58,9 @@ namespace VideoFrameAnalyzer
             nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(Cfg, Weight);
             //nnet.SetPreferableBackend(Net.Backend.INFERENCE_ENGINE);
             //nnet.SetPreferableTarget(Net.Target.CPU);
-            _outNames = nnet.GetUnconnectedOutLayersNames();
+            _outNames = nnet.GetUnconnectedOutLayersNames()!;
+
             outs = Enumerable.Repeat(false, _outNames.Length).Select(_ => new Mat()).ToArray();
-        }
-
-        private void ReadConfig(IConfiguration configuration)
-        {
-            var options = new Yolo3Options();
-            configuration.GetSection(Yolo3Options.Yolo3).Bind(options);
-
-            Cfg = Path.Combine(options.RootPath, options.ConfigFile);
-            Weight = Path.Combine(options.RootPath, options.WeightsFile);
-            Names = Path.Combine(options.RootPath, options.NamesFile);
         }
 
         public DnnDetectedObject[][] ClassifyObjects(IEnumerable<Mat> images)
@@ -188,9 +189,8 @@ namespace VideoFrameAnalyzer
             return results;
         }
 
-        private int GetMaxProbabilityClassIndex(Mat inputMatrix, int dim0Index, int dim1Index, Range dim2Range)
+        private static int GetMaxProbabilityClassIndex(Mat inputMatrix, int dim0Index, int dim1Index, Range dim2Range)
         {
-            int numItems = dim2Range.End - dim2Range.Start + 1;
             int dim2MaxIndex = -1;
             float dim2MaxValue = 0;
 

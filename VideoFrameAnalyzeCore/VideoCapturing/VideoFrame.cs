@@ -31,16 +31,22 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // 
 
+#nullable enable
 using OpenCvSharp;
 using System;
+using VideoFrameAnalyzeStd.VideoCapturing;
 
 namespace VideoFrameAnalyzer
 {
     /// <summary> Metadata for a VideoFrame. </summary>
+#pragma warning disable CA1815 // Override equals and operator equals on value types
     public struct VideoFrameMetadata
+#pragma warning restore CA1815 // Override equals and operator equals on value types
     {
-        public DateTime Timestamp;
-        public int Index;
+        public DateTime Timestamp { get; set; }
+        public int Index { get; set; }
+
+        public VideoStreamInfo Info { get; set;}
     }
 
     /// <summary> A video frame produced by the <see cref="FrameGrabber{AnalysisResultType}"/>.
@@ -67,6 +73,6 @@ namespace VideoFrameAnalyzer
 
         /// <summary> Gets or sets the frame's "user data". </summary>
         /// <value> Any additional data that the user would like to attach to a video frame. </value>
-        public object UserData { get; set; } = null;
+        public object? UserData { get; set; } = null;
     }
 }

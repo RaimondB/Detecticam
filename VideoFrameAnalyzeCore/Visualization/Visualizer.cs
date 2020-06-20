@@ -38,18 +38,23 @@ namespace VideoFrameAnalyzer
                 var label = $"{dObj.Label} {dObj.Probability * 100:0.00}%";
                 var textSize = Cv2.GetTextSize(label, HersheyFonts.HersheyTriplex, 0.5, 1, out var baseline);
 
-                var xLabel = x1;
-                var yLabelBase = y1.CropInRange(0, y1 - baseline);
+                var yLabelBase = y1.CropInRange(baseline, y1 - baseline);
                 var yLabelTop = y1.CropInRange(0, y1 - textSize.Height - baseline);
 
                 //draw result boundingbox
                 result.Rectangle(new Point(x1, y1), new Point(x1 + w, y1 + h), color, 2);
 
                 //draw result label on top of boundingbox
-                Cv2.Rectangle(result, new Rect(new Point(x1, y1 - textSize.Height - baseline),
-                        new Size(textSize.Width, textSize.Height + baseline)), color, Cv2.FILLED);
-                Cv2.PutText(result, label, new Point(x1, y1 - baseline),
+                Cv2.Rectangle(result, new Rect(new Point(x1, yLabelTop),
+                    new Size(textSize.Width, textSize.Height + baseline)), color, Cv2.FILLED);
+                Cv2.PutText(result, label, new Point(x1, yLabelBase),
                     HersheyFonts.HersheyTriplex, 0.5, Scalar.Black);
+
+                //draw result label on top of boundingbox
+                //Cv2.Rectangle(result, new Rect(new Point(x1, y1 - textSize.Height - baseline),
+                //        new Size(textSize.Width, textSize.Height + baseline)), color, Cv2.FILLED);
+                //Cv2.PutText(result, label, new Point(x1, y1 - baseline),
+                //    HersheyFonts.HersheyTriplex, 0.5, Scalar.Black);
             }
             return result;
         }

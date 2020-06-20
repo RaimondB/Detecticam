@@ -1,19 +1,23 @@
-﻿using OpenCvSharp;
+﻿#nullable enable
+
+using OpenCvSharp;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace VideoFrameAnalyzeStd.VideoCapturing
 {
     public class VideoStreamInfo
     {
-        public string Id { get; set; }
-        public string Path { get; set; }
+        public string Id { get; set; } = default!;
+        public string Path { get; set; } = default!;
 
         public double Fps { get; set; }
         public bool IsContinuous { get; set; } = true;
 
-        public string Rotate { 
+        public string? Rotate { 
             get
             {
                 return _rotateFlags?.ToString();
@@ -31,6 +35,8 @@ namespace VideoFrameAnalyzeStd.VideoCapturing
                 }
             }
         }
+
+        public Uri? CallbackUrl { get; set; }
 
         private RotateFlags? _rotateFlags = null;
 

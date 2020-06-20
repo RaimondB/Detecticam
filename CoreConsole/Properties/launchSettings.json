@@ -2,7 +2,6 @@
   "profiles": {
     "CoreConsole": {
       "commandName": "Project",
-      "commandLineArgs": "--configAdir=\"C:\\Users\\raimo\\OneDrive\\Repos\\temp\"",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }

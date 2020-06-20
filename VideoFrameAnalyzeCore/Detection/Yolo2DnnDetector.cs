@@ -11,7 +11,7 @@ namespace VideoFrameAnalyzer
 {
     public class Yolo2DnnDetector : IDnnDetector
     {
-        string[] _outNames;
+        private readonly string[] _outNames;
         //private static string prott1 = @"C:\Users\Raimo\Downloads\MobileNetSSD_deploy.prototxt";
         //private static string prott2 = @"C:\Users\Raimo\Downloads\mobilenet_iter_73000.caffemodel";
 
@@ -39,7 +39,7 @@ namespace VideoFrameAnalyzer
         private static readonly Scalar[] Colors = Enumerable.Repeat(false, 20).Select(x => Scalar.RandomColor()).ToArray();
 
 
-        private OpenCvSharp.Dnn.Net nnet;
+        private readonly OpenCvSharp.Dnn.Net nnet;
         private readonly ILogger _logger;
 
         public Yolo2DnnDetector(ILogger<IDnnDetector> logger)
@@ -49,7 +49,7 @@ namespace VideoFrameAnalyzer
             nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(Cfg, Weight);
             //nnet.SetPreferableBackend(Net.Backend.INFERENCE_ENGINE);
             //nnet.SetPreferableTarget(Net.Target.CPU);
-            _outNames = nnet.GetUnconnectedOutLayersNames();
+            _outNames = nnet.GetUnconnectedOutLayersNames()!;
         }
 
         public DnnDetectedObject[] ClassifyObjects(Mat image, Rect boxToAnalyze)

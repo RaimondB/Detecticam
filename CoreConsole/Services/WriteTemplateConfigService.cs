@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿#nullable enable
+
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -18,12 +20,12 @@ namespace CameraWatcher
 {
     public class WriteTemplateConfigService : IHostedService
     {
-        private IConfigurationRoot ConfigRoot;
+        private readonly IConfigurationRoot ConfigRoot;
         //private ReportConfig _config;
         private readonly ILogger _logger;
         private readonly IHostApplicationLifetime _appLifetime;
 
-        public WriteTemplateConfigService( ILogger<CameraWatcherService> logger,
+        public WriteTemplateConfigService( ILogger<WriteTemplateConfigService> logger,
                                        IHostApplicationLifetime appLifetime,
                                        IConfiguration configRoot)
         {
@@ -55,12 +57,13 @@ namespace CameraWatcher
         }
 
 
-        public async Task StopAsync(CancellationToken cancellationToken)
+        public Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Process exiting.");
 
             //await _grabber.StopProcessingAsync().ConfigureAwait(false);
             //_grabber.Dispose();
+            return Task.CompletedTask;
         }
 
     }

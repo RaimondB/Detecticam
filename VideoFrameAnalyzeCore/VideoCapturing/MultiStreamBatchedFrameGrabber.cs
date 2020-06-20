@@ -1,3 +1,4 @@
+#nullable enable
 // Uncomment this to enable the LogMessage function, which can with debugging timing issues.
 #define TRACE_GRABBER
 
@@ -14,6 +15,8 @@ using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Drawing;
+using VideoFrameAnalyzeCore.VideoCapturing;
+using System.Diagnostics.CodeAnalysis;
 
 namespace VideoFrameAnalyzer
 {
@@ -22,36 +25,6 @@ namespace VideoFrameAnalyzer
     ///     the AnalysisFunction will return, when it calls some API on a video frame. </typeparam>
     public class MultiStreamBatchedFrameGrabber<TAnalysisResultType> : IDisposable
     {
-        #region Types
-
-        /// <summary> Additional information for new frame events. </summary>
-        /// <seealso cref="System.EventArgs"/>
-        public class NewFramesEventArgs : EventArgs
-        {
-            public NewFramesEventArgs(IList<VideoFrame> frame)
-            {
-                Frame = frame;
-            }
-            public IList<VideoFrame> Frame { get; }
-        }
-
-        /// <summary> Additional information for new result events, which occur when an API call
-        ///     returns. </summary>
-        /// <seealso cref="System.EventArgs"/>
-        public class NewResultsEventArgs : EventArgs
-        {
-            public NewResultsEventArgs(IList<VideoFrame> frames)
-            {
-                Frames = frames;
-            }
-            public IList<VideoFrame> Frames { get; }
-            public TAnalysisResultType Analysis { get; set; } = default(TAnalysisResultType);
-            public bool TimedOut { get; set; } = false;
-            public Exception Exception { get; set; } = null;
-        }
-
-        #endregion Types
-
         #region Properties
 
         /// <summary> Gets or sets the analysis function. The function can be any asynchronous
@@ -64,7 +37,7 @@ namespace VideoFrameAnalyzer
         ///     var grabber = new FrameGrabber();
         ///     grabber.AnalysisFunction = async (frame) =&gt; { return await client.RecognizeAsync(frame.Image.ToMemoryStream(".jpg")); };
         ///     </code></example>
-        public Func<IList<VideoFrame>, Task<TAnalysisResultType>> AnalysisFunction { get; set; } = null;
+        public Func<IList<VideoFrame>, Task<TAnalysisResultType>>? AnalysisFunction { get; set; } = null;
 
         /// <summary> Gets or sets the analysis timeout. When executing the
         ///     <see cref="AnalysisFunction"/> on a video frame, if the call doesn't return a
@@ -92,26 +65,32 @@ namespace VideoFrameAnalyzer
 
         #region Fields
 
-        private List<VideoStream> _streams = new List<VideoStream>();
-        private VideoStreamsConfigCollection _streamsConfig;
+        private readonly List<VideoStream> _streams = new List<VideoStream>();
+        private readonly VideoStreamsConfigCollection _streamsConfig;
 
         private bool _stopping = false;
-        private Task _consumerTask = null;
-        private Task _mergeTask = null;
+        private Task? _consumerTask = null;
+        private Task? _mergeTask = null;
 
         private bool disposedValue = false;
-        private ILogger _logger;
-        private IConfiguration _configuration;
+        private readonly ILogger _logger;
+        private readonly IConfiguration _configuration;
 
         #endregion Fields
 
         #region Methods
 
-        public MultiStreamBatchedFrameGrabber(ILogger<MultiFrameGrabber<TAnalysisResultType>> logger, IConfiguration configuration)
+        public MultiStreamBatchedFrameGrabber([DisallowNull] ILogger<MultiStreamBatchedFrameGrabber<TAnalysisResultType>> logger, 
+                                              [DisallowNull] IConfiguration configuration)
         {
+            if (logger is null) throw new ArgumentNullException(nameof(logger));
+            if (configuration is null) throw new ArgumentNullException(nameof(configuration));
+
             _logger = logger;
             _configuration = configuration;
+
             _streamsConfig = _configuration.GetSection("video-streams").Get<VideoStreamsConfigCollection>();
+
             _logger.LogInformation("Loaded configuration for {numberOfStreams} streams:{streamIds}", _streamsConfig.Count,
                 String.Join(",", _streamsConfig.Select(s => s.Id)));
         }
@@ -137,49 +116,50 @@ namespace VideoFrameAnalyzer
             _logger.LogDebug(String.Format(CultureInfo.InvariantCulture, format, args));
         }
 
-        protected async Task<NewResultsEventArgs> DoAnalyzeFrames(IList<VideoFrame> frames)
+        protected async Task<NewResultsEventArgs<TAnalysisResultType>?> DoAnalyzeFrames(IList<VideoFrame> frames)
         {
-            using (CancellationTokenSource source = new CancellationTokenSource())
+            using CancellationTokenSource source = new CancellationTokenSource();
+            // Make a local reference to the function, just in case someone sets
+            // AnalysisFunction = null before we can call it.
+            var fcn = AnalysisFunction;
+            if (fcn != null)
             {
-                // Make a local reference to the function, just in case someone sets
-                // AnalysisFunction = null before we can call it.
-                var fcn = AnalysisFunction;
-                if (fcn != null)
+                var output = new NewResultsEventArgs<TAnalysisResultType>(frames);
+                var task = fcn(frames);
+                LogDebug("DoAnalysis: started task {0}", task.Id);
+                try
                 {
-                    NewResultsEventArgs output = new NewResultsEventArgs(frames);
-                    var task = fcn(frames);
-                    LogDebug("DoAnalysis: started task {0}", task.Id);
-                    try
+                    if (task == await Task.WhenAny(task, Task.Delay(AnalysisTimeout, source.Token)).ConfigureAwait(false))
                     {
-                        if (task == await Task.WhenAny(task, Task.Delay(AnalysisTimeout, source.Token)))
-                        {
-                            output.Analysis = await task.ConfigureAwait(false);
-                            source.Cancel();
-                        }
-                        else
-                        {
-                            LogWarning("DoAnalysis: Timeout from task {0}", task.Id);
-                            output.TimedOut = true;
-                        }
+                        output.Analysis = await task.ConfigureAwait(false);
+                        source.Cancel();
                     }
-                    catch (Exception ae)
+                    else
                     {
-                        output.Exception = ae;
-                        LogWarning("DoAnalysis: Exception from task {0}:{1}", task.Id, ae.Message);
+                        LogWarning("DoAnalysis: Timeout from task {0}", task.Id);
+                        output.TimedOut = true;
                     }
-
-                    LogDebug("DoAnalysis: returned from task {0}", task.Id);
-
-                    return output;
                 }
-                else
+#pragma warning disable CA1031 // Do not catch general exception types
+                catch (Exception ae)
+#pragma warning restore CA1031 // Do not catch general exception types
                 {
-                    return null;
+                    output.Exception = ae;
+                    LogWarning("DoAnalysis: Exception from task {0}:{1}", task.Id, ae.Message);
                 }
+
+                LogDebug("DoAnalysis: returned from task {0}", task.Id);
+
+                return output;
+            }
+            else
+            {
+                return null;
             }
         }
 
         private TimeSpan _analysisInterval;
+
         public void TriggerAnalysisOnInterval(TimeSpan interval)
         {
             _analysisInterval = interval;
@@ -205,7 +185,7 @@ namespace VideoFrameAnalyzer
             SingleWriter = true
         });
 
-        private List<Channel<VideoFrame>> _capturingChannels = new List<Channel<VideoFrame>>();
+        private readonly List<Channel<VideoFrame>> _capturingChannels = new List<Channel<VideoFrame>>();
 
 
         public void StartProcessingFileAsync(VideoStreamInfo streamInfo)
@@ -251,9 +231,11 @@ namespace VideoFrameAnalyzer
                             var result = await readers[index].ReadAsync().ConfigureAwait(false);
                             results.Add(result);
                         }
+#pragma warning disable CA1031 // Do not catch general exception types
                         catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                         {
-                            LogMessage($"Exception during channel merge:{ex.ToString()}");
+                            LogMessage($"Exception during channel merge:{ex}");
                             //Just continue to next on errors or timeouts
                         }
                     }
@@ -290,11 +272,20 @@ namespace VideoFrameAnalyzer
 
                         var result = await DoAnalyzeFrames(vframes).ConfigureAwait(false);
 
-                        LogMessage("Consumer: analysis took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
+                        if (result != null)
+                        {
+                            LogMessage("Consumer: analysis took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
-                        OnNewResultAvailable(result);
+                            OnNewResultAvailable(result);
+                        }
+                        else
+                        {
+                            LogWarning("Consumer: analysis returned null!");
+                        }
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         LogMessage($"Exception in consumertask:{ex.Message}");
                         //try to continue always
@@ -348,7 +339,7 @@ namespace VideoFrameAnalyzer
 
         /// <summary> Raises the new result event. </summary>
         /// <param name="args"> Event information to send to registered event handlers. </param>
-        protected void OnNewResultAvailable(NewResultsEventArgs args)
+        protected void OnNewResultAvailable(NewResultsEventArgs<TAnalysisResultType> args)
         {
             NewResultsAvailable?.Invoke(this, args);
         }
@@ -379,8 +370,8 @@ namespace VideoFrameAnalyzer
 
         #region Events
 
-        public event EventHandler<NewFramesEventArgs> NewFramesProvided;
-        public event EventHandler<NewResultsEventArgs> NewResultsAvailable;
+        public event EventHandler<NewFramesEventArgs>? NewFramesProvided;
+        public event EventHandler<NewResultsEventArgs<TAnalysisResultType>>? NewResultsAvailable;
 
         #endregion Events
     }

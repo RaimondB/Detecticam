@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿#nullable enable
+
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,7 +24,7 @@ namespace CameraWatcher
             .ConfigureAppConfiguration((hostingContext, config) =>
             {
                 var env = hostingContext.HostingEnvironment;
-                string configPath = null;
+                string? configPath = null;
 
                 var basePathConfig = hostingContext.Configuration.GetValue<string>("configdir");
                 if (!String.IsNullOrEmpty(basePathConfig))
@@ -63,6 +65,7 @@ namespace CameraWatcher
                     //    MultiFrameGrabber<DnnDetectedObject[]>>();
                     //services.AddSingleton<MultiFrameGrabber<DnnDetectedObject[]>,
                     //    MultiFrameGrabber<DnnDetectedObject[]>>();
+                    services.AddHttpClient();
                     services.AddHostedService<BatchedCameraWatcherService>();
                     services.AddSingleton<IBatchedDnnDetector, Yolo3BatchedDnnDetector>();
                     services.AddSingleton<MultiStreamBatchedFrameGrabber<DnnDetectedObject[][]>,
@@ -80,7 +83,7 @@ namespace CameraWatcher
 
         static async Task Main(string[] args)
         {
-            await CreateHostBuilder(args).Build().RunAsync();
+            await CreateHostBuilder(args).Build().RunAsync().ConfigureAwait(false);
         }
     }
 }

@@ -8,9 +8,9 @@ namespace VideoFrameAnalyzeStd.Detection
     {
         public const string Yolo3 = "yolo3";
 
-        public string RootPath { get; set; }
-        public string NamesFile { get; set; }
-        public string ConfigFile { get; set; }
-        public string WeightsFile { get; set; }
+        public string RootPath { get; set; } = default!;
+        public string NamesFile { get; set; } = default!;
+        public string ConfigFile { get; set; } = default!;
+        public string WeightsFile { get; set; } = default!;
     }
 }

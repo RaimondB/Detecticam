@@ -1,10 +1,13 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿#nullable enable
+
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -13,27 +16,35 @@ using System.Threading;
 using System.Threading.Tasks;
 using VideoFrameAnalyzer;
 using VideoFrameAnalyzeStd.Detection;
+using System.Net.Http;
 
 namespace CameraWatcher
 {
     public class BatchedCameraWatcherService : IHostedService
     {
-        private IConfigurationRoot ConfigRoot;
-        //private ReportConfig _config;
         private readonly ILogger _logger;
         private readonly IHostApplicationLifetime _appLifetime;
         private readonly IBatchedDnnDetector _detector;
-        private string _captureOutputPath = null;
+        private string? _captureOutputPath = null;
+        private IHttpClientFactory _clientFactory;
 
         private readonly MultiStreamBatchedFrameGrabber<DnnDetectedObject[][]> _grabber;
 
-        public BatchedCameraWatcherService( ILogger<CameraWatcherService> logger,
+        public BatchedCameraWatcherService( ILogger<BatchedCameraWatcherService> logger,
                                         IBatchedDnnDetector detector,
                                         MultiStreamBatchedFrameGrabber<DnnDetectedObject[][]> grabber,
                                        IHostApplicationLifetime appLifetime,
-                                       IConfiguration configRoot)
+                                       IConfiguration configRoot,
+                                       IHttpClientFactory clientFactory)
         {
-            ConfigRoot = (IConfigurationRoot)configRoot;
+            if(logger is null) throw new ArgumentNullException(nameof(logger));
+            if(detector is null) throw new ArgumentNullException(nameof(detector));
+            if(grabber is null) throw new ArgumentNullException(nameof(grabber));
+            if(appLifetime is null) throw new ArgumentNullException(nameof(appLifetime));
+            if (configRoot is null) throw new ArgumentNullException(nameof(configRoot));
+            if (clientFactory is null) throw new ArgumentNullException(nameof(clientFactory));
+
+            _clientFactory = clientFactory;
             _logger = logger;
             _appLifetime = appLifetime;
             _detector = detector;
@@ -44,10 +55,17 @@ namespace CameraWatcher
         private void InitCaptureOutputPath(IConfiguration config)
         {
             var path = config.GetSection("capture-path").Get<string>();
-            _captureOutputPath = Path.GetFullPath(path);
-            if(!Directory.Exists(_captureOutputPath))
+            if (!String.IsNullOrEmpty(path))
             {
-                Directory.CreateDirectory(_captureOutputPath);
+                _captureOutputPath = Path.GetFullPath(path);
+                if (!Directory.Exists(_captureOutputPath))
+                {
+                    Directory.CreateDirectory(_captureOutputPath);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("capture-path is empty. No captures will be saved");
             }
         }
 
@@ -58,13 +76,13 @@ namespace CameraWatcher
             return Task.CompletedTask;
         }
 
-        private async void OnStarted()
+        private void OnStarted()
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
             _grabber.AnalysisFunction = OpenCVDNNYoloBatchDetect;
 
-            _grabber.NewResultsAvailable += (s, e) =>
+            _grabber.NewResultsAvailable += async (s, e) =>
             {
                 if (e.TimedOut)
                     _logger.LogWarning("Analysis function timed out.");
@@ -86,16 +104,29 @@ namespace CameraWatcher
                             _logger.LogInformation($"Detected: {dObj.Label} ; prob: {dObj.Probability}");
                         }
 
-                        if (analysis.Length > 0 && analysis.Any(o => o.Label == "person"))
+                        if (!String.IsNullOrEmpty(_captureOutputPath))
                         {
-                            using (var result = Visualizer.AnnotateImage(frame.Image, analysis.ToArray()))
+                            if (analysis.Length > 0 && analysis.Any(o => o.Label == "person"))
                             {
+                                var info = frame.Metadata.Info;
+                                _logger.LogInformation($"Interesting Detection For: {info.Id}");
+
+                                using var result = Visualizer.AnnotateImage(frame.Image, analysis.ToArray());
                                 var filename = $"obj-{GetTimestampedSortable(frame.Metadata)}.jpg";
                                 var filePath = Path.Combine(_captureOutputPath, filename);
                                 Cv2.ImWrite(filePath, result);
                                 _logger.LogInformation($"Interesting Detection Saved: {filename}");
+
+                                //Callback url configured, so execute it
+                                var url = frame.Metadata.Info.CallbackUrl;
+                                if (url != null)
+                                {
+                                    _logger.LogInformation($"Trigger Callback Url Saved: {filename}");
+                                    var client = _clientFactory.CreateClient();
+                                    await client.GetAsync(url).ConfigureAwait(false);
+                                }
                             }
-                        } 
+                        }
                     }
                 }
             };
@@ -127,51 +158,38 @@ namespace CameraWatcher
 
         }
 
-        public async Task StopAsync(CancellationToken cancellationToken)
+        public Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Process received stop signal.");
 
             //await _grabber.StopProcessingAsync().ConfigureAwait(false);
             //_grabber.Dispose();
+            return Task.CompletedTask;
         }
 
         private static string GetTimestampedSortable(VideoFrameMetadata metaData)
         {
-            return $"{metaData.Timestamp:yyyyMMddTHHmmss}-{metaData.Index:00000}";
+            return $"{metaData.Timestamp:yyyyMMddTHHmmss}";
         }
 
         private Task<DnnDetectedObject[][]> OpenCVDNNYoloBatchDetect(IList<VideoFrame> frames)
         {
-            //if (image == null || image.Width <= 0 || image.Height <= 0)
-            //{
-            //    return Task.FromResult(Array.Empty<DnnDetectedObject>());
-            //}
+            var images = frames.Where(f => f.Image != null).Select(f => f.Image).ToList();
 
-            var images = frames.Select(f => f.Image);
-
-
-            Func<DnnDetectedObject[][]> detector = () =>
+            DnnDetectedObject[][] detector()
             {
                 DnnDetectedObject[][] result;
 
-                //try
-                //{
-                    var watch = new Stopwatch();
-                    watch.Start();
+                var watch = new Stopwatch();
+                watch.Start();
 
-                    result = _detector.ClassifyObjects(images);
+                result = _detector.ClassifyObjects(images);
 
-                    watch.Stop();
-                    _logger.LogInformation($"Classifiy-objects ms:{watch.ElapsedMilliseconds}");
-                //}
-                //catch (Exception ex)
-                //{
-                //    result = (DnnDetectedObject[][])new List<List<DnnDetectedObject>>(0);
-                //    _logger.LogError(ex, $"Exception in analysis:{ex.Message}");
-                //}
+                watch.Stop();
+                _logger.LogInformation($"Classifiy-objects ms:{watch.ElapsedMilliseconds}");
 
                 return result;
-            };
+            }
 
             //var result2 = detector();
             //return Task.FromResult(result2);
