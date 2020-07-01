@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -97,27 +95,7 @@ namespace CameraWatcher
                 }
             });
 
-            //_grabber.StartProcessingFileAsync(
-            //    @"C:\Users\raimo\Downloads\Side Door - 20200518 - 164300_Trim.mp4",
-            //    isContinuousStream: false, rotateFlags: RotateFlags.Rotate90Clockwise);
-
-            //_grabber.StartProcessingFileAsync(
-            //      @"C:\Users\raimo\Downloads\HIKVISION - DS-2CD2143G0-I - 20200518 - 194212-264.mp4",
-            //      isContinuousStream: false);
-
-
-            //_grabber.StartProcessingFileAsync(
-            //    @"rtsp://cam-admin:M3s%21Ew9JEH%2A%23@foscam.home:88/videoSub",
-            //    rotateFlags: RotateFlags.Rotate90Clockwise
-            //    , overrideFPS: 15
-            //);
-
-            //_grabber.StartProcessingFileAsync(
-            //    @"rtsp://admin:nCmDZx8U@192.168.2.125:554/Streaming/Channels/102",
-            //    overrideFPS: 30);
             _grabber.StartProcessingAll();
-
-
         }
 
         private async Task ProcessAnalysisResult(AnalysisResult<DnnDetectedObject[][]> e)
@@ -160,7 +138,7 @@ namespace CameraWatcher
                             if (url != null)
                             {
                                 _logger.LogInformation($"Trigger Callback Url Saved: {filename}");
-                                var client = _clientFactory.CreateClient();
+                                using var client = _clientFactory.CreateClient();
                                 await client.GetAsync(url).ConfigureAwait(false);
                             }
                         }

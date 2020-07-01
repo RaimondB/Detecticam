@@ -120,16 +120,14 @@ namespace VideoFrameAnalyzer
                         {
                             var colRange = new Range(prefix, prob.Size(2) - 1);
 
-                            ////get classes probability
-                            //Cv2.MinMaxLoc((classProbsArray, out _, out OpenCvSharp.Point max);
-
-                            var classes = GetMaxProbabilityClassIndex(prob, inputIndex, i, colRange);
-                            if (classes == -1)
+                            var maxProbIndex = prob.FindMaxValueIndexInRange<float>(inputIndex, i, colRange);
+                                //GetMaxProbabilityClassIndex(prob, inputIndex, i, colRange);
+                            if (maxProbIndex == -1)
                             {
                                 continue;
                             }
-                            //var classes = max.X;
-                            var probability = prob.At<float>(inputIndex, i, classes);
+
+                            var probability = prob.At<float>(inputIndex, i, maxProbIndex);
 
                             if (probability > threshold) //more accuracy, you can cancel it
                             {
@@ -143,7 +141,7 @@ namespace VideoFrameAnalyzer
                                 float Y = Math.Max(0, centerY - (height / 2.0f));
 
                                 //put data to list for NMSBoxes
-                                classIds.Add(classes - prefix);
+                                classIds.Add(maxProbIndex - prefix);
                                 confidences.Add(confidence);
                                 probabilities.Add(probability);
                                 boxes.Add(new Rect2d(X, Y, width, height));
@@ -162,7 +160,7 @@ namespace VideoFrameAnalyzer
                 else
                 {
                     CvDnn.NMSBoxes(boxes, confidences, threshold, nmsThreshold, out indices);
-                    _logger.LogInformation($"NMSBoxes drop {confidences.Count - indices.Length} overlapping result.");
+                    _logger.LogDebug($"NMSBoxes drop {confidences.Count - indices.Length} overlapping result.");
                 }
 
                 var result = new List<DnnDetectedObject>();
@@ -187,21 +185,21 @@ namespace VideoFrameAnalyzer
             return results;
         }
 
-        private static int GetMaxProbabilityClassIndex(Mat inputMatrix, int dim0Index, int dim1Index, Range dim2Range)
-        {
-            int dim2MaxIndex = -1;
-            float dim2MaxValue = 0;
+        //private static int GetMaxProbabilityClassIndex(Mat inputMatrix, int dim0Index, int dim1Index, Range dim2Range)
+        //{
+        //    int dim2MaxIndex = -1;
+        //    float dim2MaxValue = 0;
 
-            for (int dim2Index = dim2Range.Start; dim2Index <= dim2Range.End; dim2Index++)
-            {
-                var curValue = inputMatrix.At<float>(dim0Index, dim1Index, dim2Index);
-                if (curValue > dim2MaxValue)
-                {
-                    dim2MaxIndex = dim2Index;
-                    dim2MaxValue = curValue;
-                }
-            }
-            return dim2MaxIndex;
-        }
+        //    for (int dim2Index = dim2Range.Start; dim2Index <= dim2Range.End; dim2Index++)
+        //    {
+        //        var curValue = inputMatrix.At<float>(dim0Index, dim1Index, dim2Index);
+        //        if (curValue > dim2MaxValue)
+        //        {
+        //            dim2MaxIndex = dim2Index;
+        //            dim2MaxValue = curValue;
+        //        }
+        //    }
+        //    return dim2MaxIndex;
+        //}
     }
 }

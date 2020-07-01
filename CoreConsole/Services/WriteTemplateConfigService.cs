@@ -13,7 +13,6 @@ namespace CameraWatcher
     public class WriteTemplateConfigService : IHostedService
     {
         private readonly IConfigurationRoot ConfigRoot;
-        //private ReportConfig _config;
         private readonly ILogger _logger;
         private readonly IHostApplicationLifetime _appLifetime;
 
@@ -28,8 +27,6 @@ namespace CameraWatcher
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            //            _appLifetime.ApplicationStarted.Register(OnStarted, false);
-
             var outputDirectory = ((IConfiguration)ConfigRoot).GetValue<string>("ConfigDir");
 
             var targetFilePath = Path.GetFullPath("appsettings.json", outputDirectory);
@@ -48,15 +45,11 @@ namespace CameraWatcher
             return Task.CompletedTask;
         }
 
-
         public Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Process exiting.");
 
-            //await _grabber.StopProcessingAsync().ConfigureAwait(false);
-            //_grabber.Dispose();
             return Task.CompletedTask;
         }
-
     }
 }

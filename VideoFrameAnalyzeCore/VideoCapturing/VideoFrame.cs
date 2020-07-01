@@ -39,19 +39,22 @@ using VideoFrameAnalyzeStd.VideoCapturing;
 namespace VideoFrameAnalyzer
 {
     /// <summary> Metadata for a VideoFrame. </summary>
-#pragma warning disable CA1815 // Override equals and operator equals on value types
-    public struct VideoFrameMetadata
-#pragma warning restore CA1815 // Override equals and operator equals on value types
+    public class VideoFrameMetadata
     {
-        public DateTime Timestamp { get; set; }
-        public int Index { get; set; }
+        public DateTime Timestamp { get; }
+        public int Index { get; }
+        public VideoStreamInfo Info { get; }
 
-        public VideoStreamInfo Info { get; set; }
+        public VideoFrameMetadata(DateTime timestamp, int index, VideoStreamInfo info)
+        {
+            Timestamp = timestamp;
+            Index = index;
+            Info = info;
+        }
     }
 
     /// <summary> A video frame produced by the <see cref="FrameGrabber{AnalysisResultType}"/>.
-    ///     This class encapsulates the image, any metadata, and also allows the user to attach
-    ///     some arbitrary data to each frame as it flows through the pipeline. </summary>
+    ///     This class encapsulates the image and metadata. </summary>
     public class VideoFrame
     {
         /// <summary> Constructor. </summary>
@@ -70,9 +73,5 @@ namespace VideoFrameAnalyzer
         /// <summary> Gets the frame's metadata. </summary>
         /// <value> The metadata. </value>
         public VideoFrameMetadata Metadata { get; }
-
-        /// <summary> Gets or sets the frame's "user data". </summary>
-        /// <value> Any additional data that the user would like to attach to a video frame. </value>
-        public object? UserData { get; set; } = null;
     }
 }

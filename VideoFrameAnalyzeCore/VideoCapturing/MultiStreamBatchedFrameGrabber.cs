@@ -123,6 +123,7 @@ namespace VideoFrameAnalyzer
         protected async Task<AnalysisResult<TAnalysisResultType>?> DoAnalyzeFrames(IList<VideoFrame> frames)
         {
             using CancellationTokenSource source = new CancellationTokenSource();
+            
             // Make a local reference to the function, just in case someone sets
             // AnalysisFunction = null before we can call it.
             var fcn = AnalysisFunction;
@@ -173,7 +174,7 @@ namespace VideoFrameAnalyzer
             Channel.CreateBounded<VideoFrame>(
                 new BoundedChannelOptions(2)
                 {
-                    AllowSynchronousContinuations = true,
+                    AllowSynchronousContinuations = false,
                     FullMode = BoundedChannelFullMode.DropNewest,
                     SingleReader = true,
                     SingleWriter = true
@@ -183,7 +184,7 @@ namespace VideoFrameAnalyzer
             Channel.CreateBounded<IList<VideoFrame>>(
         new BoundedChannelOptions(2)
         {
-            AllowSynchronousContinuations = true,
+            AllowSynchronousContinuations = false,
             FullMode = BoundedChannelFullMode.DropNewest,
             SingleReader = true,
             SingleWriter = true
@@ -228,7 +229,7 @@ namespace VideoFrameAnalyzer
         {
             return Task.Run(async () =>
             {
-                var timeout = TimeSpan.FromMilliseconds(50);
+                //var timeout = TimeSpan.FromMilliseconds(50);
 
                 var readers = inputChannels.Select(c => c.Reader).ToArray();
                 var writer = outputChannel.Writer;
@@ -257,7 +258,7 @@ namespace VideoFrameAnalyzer
                         LogWarning("Could not write merged result!");
                     }
 
-                    await Task.Delay(mergeDelay).ConfigureAwait(false);
+                    //await Task.Delay(mergeDelay).ConfigureAwait(false);
                 }
             });
         }
@@ -293,7 +294,8 @@ namespace VideoFrameAnalyzer
                         {
                             LogMessage("Consumer: analysis took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
-                            await writer.WriteAsync(result).ConfigureAwait(false);
+                            writer.TryWrite(result);
+                            //await writer.WriteAsync(result).ConfigureAwait(false);
                         }
                         else
                         {

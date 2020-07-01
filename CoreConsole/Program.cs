@@ -10,6 +10,7 @@ using System.IO;
 using System.Threading.Tasks;
 using VideoFrameAnalyzer;
 using VideoFrameAnalyzeStd.Detection;
+using VideoFrameAnalyzeStd.VideoCapturing;
 
 namespace CameraWatcher
 {
@@ -20,30 +21,7 @@ namespace CameraWatcher
             Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((hostingContext, config) =>
             {
-                var env = hostingContext.HostingEnvironment;
-                string? configPath = null;
-
-                var basePathConfig = hostingContext.Configuration.GetValue<string>("configdir");
-                if (!String.IsNullOrEmpty(basePathConfig))
-                {
-                    configPath = Path.GetFullPath(basePathConfig);
-                    if (Directory.Exists(configPath))
-                    {
-                        Console.WriteLine($"ConfigDir for additional configuration:{configPath}");
-                        config.AddJsonFile(Path.GetFullPath("appsettings.json", configPath));
-                    }
-                }
-                if (String.IsNullOrEmpty(configPath))
-                {
-                    configPath = Directory.GetCurrentDirectory();
-                    Console.WriteLine($"ConfigDir not found, falling back to default location:{configPath}");
-                }
-
-                var Dict = new Dictionary<string, string>
-                {
-                    {"ConfigDir", configPath}
-                };
-                config.AddInMemoryCollection(Dict);
+                ConfigureConfigDir(hostingContext, config);
 
                 config.AddEnvironmentVariables(prefix: "CAMERAWATCH_");
             })
@@ -56,12 +34,6 @@ namespace CameraWatcher
                 }
                 else
                 {
-                    //services.AddHostedService<CameraWatcherService>();
-                    //services.AddSingleton<IDnnDetector, Yolo3DnnDetector>();
-                    //services.AddSingleton<MultiFrameGrabber<DnnDetectedObject[]>,
-                    //    MultiFrameGrabber<DnnDetectedObject[]>>();
-                    //services.AddSingleton<MultiFrameGrabber<DnnDetectedObject[]>,
-                    //    MultiFrameGrabber<DnnDetectedObject[]>>();
                     services.AddHttpClient();
                     services.AddHostedService<BatchedCameraWatcherService>();
                     services.AddSingleton<IBatchedDnnDetector, Yolo3BatchedDnnDetector>();
@@ -77,6 +49,33 @@ namespace CameraWatcher
                     c.IncludeScopes = false;
                 });
             });
+
+        private static void ConfigureConfigDir(HostBuilderContext hostingContext, IConfigurationBuilder config)
+        {
+            string? configPath = null;
+
+            var basePathConfig = hostingContext.Configuration.GetValue<string>("configdir");
+            if (!String.IsNullOrEmpty(basePathConfig))
+            {
+                configPath = Path.GetFullPath(basePathConfig);
+                if (Directory.Exists(configPath))
+                {
+                    Console.WriteLine($"ConfigDir for configuration:{configPath}");
+                    config.AddJsonFile(Path.GetFullPath("appsettings.json", configPath));
+                }
+            }
+            if (String.IsNullOrEmpty(configPath))
+            {
+                configPath = Directory.GetCurrentDirectory();
+                Console.WriteLine($"ConfigDir not specified, falling back to default location:{configPath}");
+            }
+
+            var Dict = new Dictionary<string, string>
+                {
+                    {"ConfigDir", configPath}
+                };
+            config.AddInMemoryCollection(Dict);
+        }
 
         static async Task Main(string[] args)
         {
