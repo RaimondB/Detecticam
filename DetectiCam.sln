@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DetectiCam", "CoreConsole\DetectiCam.csproj", "{58175C48-520B-4A9D-A114-4EE268C4C663}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{94B75B7B-7D23-4CE7-AD2C-F8D3FF0AB214}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -18,7 +16,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "YoloData", "YoloData", "{83
 		YoloData\yolov3.weights = YoloData\yolov3.weights
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DetectiCam.Core", "VideoFrameAnalyzeCore\DetectiCam.Core.csproj", "{2D87F087-034F-42DC-A830-1C8B5714CBCC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DetectiCam", "DetectiCam\DetectiCam.csproj", "{0E48618E-4A37-4C68-B8A2-4E8B0A9A2116}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DetectiCam.Core", "DetectiCam.Core\DetectiCam.Core.csproj", "{D8587B25-B279-44DD-BBA6-50B3AB51DCD7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,14 +26,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{58175C48-520B-4A9D-A114-4EE268C4C663}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{58175C48-520B-4A9D-A114-4EE268C4C663}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{58175C48-520B-4A9D-A114-4EE268C4C663}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{58175C48-520B-4A9D-A114-4EE268C4C663}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2D87F087-034F-42DC-A830-1C8B5714CBCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2D87F087-034F-42DC-A830-1C8B5714CBCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2D87F087-034F-42DC-A830-1C8B5714CBCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2D87F087-034F-42DC-A830-1C8B5714CBCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E48618E-4A37-4C68-B8A2-4E8B0A9A2116}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E48618E-4A37-4C68-B8A2-4E8B0A9A2116}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E48618E-4A37-4C68-B8A2-4E8B0A9A2116}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E48618E-4A37-4C68-B8A2-4E8B0A9A2116}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8587B25-B279-44DD-BBA6-50B3AB51DCD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8587B25-B279-44DD-BBA6-50B3AB51DCD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8587B25-B279-44DD-BBA6-50B3AB51DCD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8587B25-B279-44DD-BBA6-50B3AB51DCD7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
