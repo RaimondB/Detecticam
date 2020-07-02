@@ -1,8 +1,7 @@
 ﻿using OpenCvSharp;
 using System.Collections.Generic;
-using VideoFrameAnalyzer;
 
-namespace VideoFrameAnalyzeStd.Detection
+namespace DetectiCam.Core.Detection
 {
     public interface IBatchedDnnDetector
     {

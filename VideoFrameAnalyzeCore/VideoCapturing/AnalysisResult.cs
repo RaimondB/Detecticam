@@ -2,9 +2,8 @@
 
 using System;
 using System.Collections.Generic;
-using VideoFrameAnalyzer;
 
-namespace VideoFrameAnalyzeCore.VideoCapturing
+namespace DetectiCam.Core.VideoCapturing
 {
     public class AnalysisResult<TAnalysisResultType>
     {

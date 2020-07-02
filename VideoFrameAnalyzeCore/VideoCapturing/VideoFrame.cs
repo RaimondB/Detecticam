@@ -1,51 +1,17 @@
-// 
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license.
-// 
-// Microsoft Cognitive Services: http://www.microsoft.com/cognitive
-// 
-// Microsoft Cognitive Services Github:
-// https://github.com/Microsoft/Cognitive
-// 
-// Copyright (c) Microsoft Corporation
-// All rights reserved.
-// 
-// MIT License:
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
-// 
-// The above copyright notice and this permission notice shall be
-// included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED ""AS IS"", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// 
-
 #nullable enable
 using OpenCvSharp;
 using System;
-using VideoFrameAnalyzeStd.VideoCapturing;
 
-namespace VideoFrameAnalyzer
+namespace DetectiCam.Core.VideoCapturing
 {
     /// <summary> Metadata for a VideoFrame. </summary>
-    public class VideoFrameMetadata
+    public class VideoFrameContext
     {
         public DateTime Timestamp { get; }
         public int Index { get; }
         public VideoStreamInfo Info { get; }
 
-        public VideoFrameMetadata(DateTime timestamp, int index, VideoStreamInfo info)
+        public VideoFrameContext(DateTime timestamp, int index, VideoStreamInfo info)
         {
             Timestamp = timestamp;
             Index = index;
@@ -53,14 +19,14 @@ namespace VideoFrameAnalyzer
         }
     }
 
-    /// <summary> A video frame produced by the <see cref="FrameGrabber{AnalysisResultType}"/>.
+    /// <summary> A video frame produced by the Framegrabber.
     ///     This class encapsulates the image and metadata. </summary>
     public class VideoFrame
     {
         /// <summary> Constructor. </summary>
         /// <param name="image">    The image captured by the camera. </param>
         /// <param name="metadata"> The metadata. </param>
-        public VideoFrame(Mat image, VideoFrameMetadata metadata)
+        public VideoFrame(Mat image, VideoFrameContext metadata)
         {
             Image = image;
             Metadata = metadata;
@@ -72,6 +38,6 @@ namespace VideoFrameAnalyzer
 
         /// <summary> Gets the frame's metadata. </summary>
         /// <value> The metadata. </value>
-        public VideoFrameMetadata Metadata { get; }
+        public VideoFrameContext Metadata { get; }
     }
 }

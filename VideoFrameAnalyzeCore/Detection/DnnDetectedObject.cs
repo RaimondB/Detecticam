@@ -1,7 +1,7 @@
 ﻿#nullable enable
 using OpenCvSharp;
 
-namespace VideoFrameAnalyzer
+namespace DetectiCam.Core.Detection
 {
     public class DnnDetectedObject
     {

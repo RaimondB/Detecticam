@@ -1,4 +1,4 @@
-﻿namespace VideoFrameAnalyzeStd.Detection
+﻿namespace DetectiCam.Core.Detection
 {
     public class Yolo3Options
     {

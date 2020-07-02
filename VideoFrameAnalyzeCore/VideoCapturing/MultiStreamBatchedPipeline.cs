@@ -14,15 +14,13 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using VideoFrameAnalyzeCore.VideoCapturing;
-using VideoFrameAnalyzeStd.VideoCapturing;
 
-namespace VideoFrameAnalyzer
+namespace DetectiCam.Core.VideoCapturing
 {
     /// <summary> A frame grabber. </summary>
-    /// <typeparam name="TAnalysisResultType"> Type of the analysis result. This is the type that
+    /// <typeparam name="TOutput"> Type of the analysis result. This is the type that
     ///     the AnalysisFunction will return, when it calls some API on a video frame. </typeparam>
-    public class MultiStreamBatchedFrameGrabber<TAnalysisResultType> : IDisposable
+    public class MultiStreamBatchedPipeline<TOutput> : IDisposable
     {
         #region Properties
 
@@ -30,13 +28,7 @@ namespace VideoFrameAnalyzer
         ///     operation that accepts a <see cref="VideoFrame"/> and returns a
         ///     <see cref="Task{AnalysisResultType}"/>. </summary>
         /// <value> The analysis function. </value>
-        /// <example> This example shows how to provide an analysis function using a lambda expression.
-        ///     <code>
-        ///     var client = new FaceServiceClient("subscription key", "api root");
-        ///     var grabber = new FrameGrabber();
-        ///     grabber.AnalysisFunction = async (frame) =&gt; { return await client.RecognizeAsync(frame.Image.ToMemoryStream(".jpg")); };
-        ///     </code></example>
-        public Func<IList<VideoFrame>, Task<TAnalysisResultType>>? AnalysisFunction { get; set; } = null;
+        public Func<IList<VideoFrame>, Task<TOutput>>? AnalysisFunction { get; set; } = null;
 
         /// <summary> Gets or sets the analysis timeout. When executing the
         ///     <see cref="AnalysisFunction"/> on a video frame, if the call doesn't return a
@@ -47,26 +39,13 @@ namespace VideoFrameAnalyzer
 
         public bool IsRunning { get { return _mergeTask != null; } }
 
-        //public double FrameRate
-        //{
-        //    get { return _fps; }
-        //    set
-        //    {
-        //        _fps = value;
-        //        if (_timer != null)
-        //        {
-        //            _timer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1.0 / _fps));
-        //        }
-        //    }
-        //}
-
-        public Channel<AnalysisResult<TAnalysisResultType>> OutputChannel { get; }
+        public Channel<AnalysisResult<TOutput>> OutputChannel { get; }
 
         #endregion Properties
 
         #region Fields
 
-        private readonly List<VideoStream> _streams = new List<VideoStream>();
+        private readonly List<VideoStreamGrabber> _streams = new List<VideoStreamGrabber>();
         private readonly VideoStreamsConfigCollection _streamsConfig;
 
         private bool _stopping = false;
@@ -82,7 +61,7 @@ namespace VideoFrameAnalyzer
         #region Methods
 
 
-        public MultiStreamBatchedFrameGrabber([DisallowNull] ILogger<MultiStreamBatchedFrameGrabber<TAnalysisResultType>> logger,
+        public MultiStreamBatchedPipeline([DisallowNull] ILogger<MultiStreamBatchedPipeline<TOutput>> logger,
                                               [DisallowNull] IConfiguration configuration)
         {
             if (logger is null) throw new ArgumentNullException(nameof(logger));
@@ -91,9 +70,10 @@ namespace VideoFrameAnalyzer
             _logger = logger;
             _configuration = configuration;
 
-            _streamsConfig = _configuration.GetSection("video-streams").Get<VideoStreamsConfigCollection>();
+            _streamsConfig = _configuration.GetSection(VideoStreamsConfigCollection.VideoStreamsConfigKey).Get<VideoStreamsConfigCollection>();
 
-            _logger.LogInformation("Loaded configuration for {numberOfStreams} streams:{streamIds}", _streamsConfig.Count,
+            _logger.LogInformation("Loaded configuration for {numberOfStreams} streams:{streamIds}", 
+                _streamsConfig.Count,
                 String.Join(",", _streamsConfig.Select(s => s.Id)));
 
             OutputChannel = CreateOutputChannel();
@@ -120,7 +100,7 @@ namespace VideoFrameAnalyzer
             _logger.LogDebug(String.Format(CultureInfo.InvariantCulture, format, args));
         }
 
-        protected async Task<AnalysisResult<TAnalysisResultType>?> DoAnalyzeFrames(IList<VideoFrame> frames)
+        protected async Task<AnalysisResult<TOutput>?> DoAnalyzeFrames(IList<VideoFrame> frames)
         {
             using CancellationTokenSource source = new CancellationTokenSource();
             
@@ -129,7 +109,7 @@ namespace VideoFrameAnalyzer
             var fcn = AnalysisFunction;
             if (fcn != null)
             {
-                var output = new AnalysisResult<TAnalysisResultType>(frames);
+                var output = new AnalysisResult<TOutput>(frames);
                 var task = fcn(frames);
                 LogDebug("DoAnalysis: started task {0}", task.Id);
                 try
@@ -190,8 +170,8 @@ namespace VideoFrameAnalyzer
             SingleWriter = true
         });
 
-        private static Channel<AnalysisResult<TAnalysisResultType>> CreateOutputChannel() =>
-            Channel.CreateUnbounded<AnalysisResult<TAnalysisResultType>>(
+        private static Channel<AnalysisResult<TOutput>> CreateOutputChannel() =>
+            Channel.CreateUnbounded<AnalysisResult<TOutput>>(
             new UnboundedChannelOptions()
             {
                 AllowSynchronousContinuations = false,
@@ -204,14 +184,14 @@ namespace VideoFrameAnalyzer
 
         public void StartProcessingFileAsync(VideoStreamInfo streamInfo)
         {
-            VideoStream vs = new VideoStream(_logger, streamInfo);
+            VideoStreamGrabber vs = new VideoStreamGrabber(_logger, streamInfo);
 
             _streams.Add(vs);
 
             var newChannel = CreateCapturingChannel();
             _capturingChannels.Add(newChannel);
 
-            vs.StartProcessingAsync(newChannel, TimeSpan.FromSeconds(3));
+            vs.StartCapturing(newChannel, TimeSpan.FromSeconds(3));
         }
 
         public void StartCapturingAllStreamsAsync()
@@ -225,7 +205,7 @@ namespace VideoFrameAnalyzer
         }
 
         public Task MergeChannels<T>(
-            IList<Channel<T>> inputChannels, Channel<IList<T>> outputChannel, TimeSpan mergeDelay)
+            IList<Channel<T>> inputChannels, Channel<IList<T>> outputChannel)
         {
             return Task.Run(async () =>
             {
@@ -257,8 +237,6 @@ namespace VideoFrameAnalyzer
                     {
                         LogWarning("Could not write merged result!");
                     }
-
-                    //await Task.Delay(mergeDelay).ConfigureAwait(false);
                 }
             });
         }
@@ -270,7 +248,7 @@ namespace VideoFrameAnalyzer
         public void StartProcessingAll()
         {
             var analysisChannel = CreateMultiFrameChannel();
-            _mergeTask = MergeChannels(_capturingChannels, analysisChannel, _analysisInterval);
+            _mergeTask = MergeChannels(_capturingChannels, analysisChannel);
 
             LogMessage("Starting Consumer Task");
             _consumerTask = Task.Run(async () =>
@@ -339,7 +317,7 @@ namespace VideoFrameAnalyzer
             }
 
             LogMessage("Stopping capturing tasks");
-            foreach (VideoStream vs in _streams)
+            foreach (VideoStreamGrabber vs in _streams)
             {
                 await vs.StopProcessingAsync();
                 vs.Dispose();
@@ -355,10 +333,10 @@ namespace VideoFrameAnalyzer
             {
                 if (disposing)
                 {
-                    //_frameGrabTimer?.Dispose();
-                    //_timer?.Dispose();
-                    //_timerMutex?.Dispose();
-                    //_analysisTaskQueue?.Dispose();
+                    foreach (VideoStreamGrabber vs in _streams)
+                    {
+                        vs?.Dispose();
+                    }
                 }
 
                 disposedValue = true;

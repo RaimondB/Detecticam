@@ -11,9 +11,9 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using VideoFrameAnalyzeCore.VideoCapturing;
-using VideoFrameAnalyzer;
-using VideoFrameAnalyzeStd.Detection;
+using DetectiCam.Core.VideoCapturing;
+using DetectiCam.Core.Visualization;
+using DetectiCam.Core.Detection;
 
 namespace CameraWatcher
 {
@@ -25,12 +25,12 @@ namespace CameraWatcher
         private string? _captureOutputPath = null;
         private IHttpClientFactory _clientFactory;
 
-        private readonly MultiStreamBatchedFrameGrabber<DnnDetectedObject[][]> _grabber;
+        private readonly MultiStreamBatchedPipeline<DnnDetectedObject[][]> _grabber;
         private Task? _resultWriterTask;
 
         public BatchedCameraWatcherService(ILogger<BatchedCameraWatcherService> logger,
                                         IBatchedDnnDetector detector,
-                                        MultiStreamBatchedFrameGrabber<DnnDetectedObject[][]> grabber,
+                                        MultiStreamBatchedPipeline<DnnDetectedObject[][]> grabber,
                                        IHostApplicationLifetime appLifetime,
                                        IConfiguration configRoot,
                                        IHttpClientFactory clientFactory)
@@ -156,7 +156,7 @@ namespace CameraWatcher
             return Task.CompletedTask;
         }
 
-        private static string GetTimestampedSortable(VideoFrameMetadata metaData)
+        private static string GetTimestampedSortable(VideoFrameContext metaData)
         {
             return $"{metaData.Timestamp:yyyyMMddTHHmmss}";
         }

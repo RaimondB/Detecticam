@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using Range = OpenCvSharp.Range;
 
-namespace VideoFrameAnalyzer
+namespace DetectiCam.Core.Detection
 {
     public static class OpenCVExtensions
     {

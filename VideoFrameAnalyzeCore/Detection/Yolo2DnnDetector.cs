@@ -5,20 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using VideoFrameAnalyzeStd.Detection;
 
-namespace VideoFrameAnalyzer
+namespace DetectiCam.Core.Detection
 {
     public class Yolo2DnnDetector : IDnnDetector
     {
         private readonly string[] _outNames;
-        //private static string prott1 = @"C:\Users\Raimo\Downloads\MobileNetSSD_deploy.prototxt";
-        //private static string prott2 = @"C:\Users\Raimo\Downloads\mobilenet_iter_73000.caffemodel";
-
-        //private static string prott1 = @"C:\Users\Raimo\Downloads\mobilenet_yolov3_lite_deploy.prototxt";
-        //private static string prott2 = @"C:\Users\Raimo\Downloads\mobilenet_yolov3_lite_deploy.caffemodel";
-        //private OpenCvSharp.Dnn.Net nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromCaffe(prott1, prott2);
-
 
         //YOLOv3
         //https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg
@@ -26,10 +18,6 @@ namespace VideoFrameAnalyzer
 
         //https://pjreddie.com/media/files/yolov3.weights
         private const string Weight = @"C:\Users\Raimo\Downloads\yolov2.weights";
-
-        //private static readonly string[] Labels = { "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor" };
-        //random assign color to each label
-        //private static readonly Scalar[] Colors = Enumerable.Repeat(false, 80).Select(x => Scalar.RandomColor()).ToArray();
 
         //https://github.com/pjreddie/darknet/blob/master/data/coco.names
         private const string Names = @"C:\Users\Raimo\Downloads\coco.names";

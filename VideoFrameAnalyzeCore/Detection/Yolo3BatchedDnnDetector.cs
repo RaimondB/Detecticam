@@ -8,10 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using VideoFrameAnalyzeStd.Detection;
 using Range = OpenCvSharp.Range;
 
-namespace VideoFrameAnalyzer
+namespace DetectiCam.Core.Detection
 {
     public class Yolo3BatchedDnnDetector : IBatchedDnnDetector
     {
@@ -184,22 +183,5 @@ namespace VideoFrameAnalyzer
 
             return results;
         }
-
-        //private static int GetMaxProbabilityClassIndex(Mat inputMatrix, int dim0Index, int dim1Index, Range dim2Range)
-        //{
-        //    int dim2MaxIndex = -1;
-        //    float dim2MaxValue = 0;
-
-        //    for (int dim2Index = dim2Range.Start; dim2Index <= dim2Range.End; dim2Index++)
-        //    {
-        //        var curValue = inputMatrix.At<float>(dim0Index, dim1Index, dim2Index);
-        //        if (curValue > dim2MaxValue)
-        //        {
-        //            dim2MaxIndex = dim2Index;
-        //            dim2MaxValue = curValue;
-        //        }
-        //    }
-        //    return dim2MaxIndex;
-        //}
     }
 }

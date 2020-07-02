@@ -1,19 +1,20 @@
 ﻿#define TRACE_GRABBER
+#nullable enable
 
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using VideoFrameAnalyzer;
 
-namespace VideoFrameAnalyzeStd.VideoCapturing
+namespace DetectiCam.Core.VideoCapturing
 {
 
-    public class VideoStream : IDisposable
+    public class VideoStreamGrabber : IDisposable
     {
         public string Path { get; }
 
@@ -35,18 +36,18 @@ namespace VideoFrameAnalyzeStd.VideoCapturing
         private readonly ILogger _logger;
         public VideoStreamInfo Info { get; }
 
-        public VideoStream(ILogger logger, string streamName, string path, double fps = 0, bool isContinuous = true, RotateFlags? rotateFlags = null)
+        public VideoStreamGrabber(ILogger logger, string streamName, string path, double fps = 0, bool isContinuous = true, RotateFlags? rotateFlags = null)
             : this(logger, new VideoStreamInfo() { Id = streamName, Path = path, Fps = fps, IsContinuous = isContinuous, RotateFlags = rotateFlags })
         {
         }
 
-        public VideoStream(ILogger logger, VideoStreamInfo streamInfo)
+        public VideoStreamGrabber(ILogger logger, VideoStreamInfo streamInfo)
         {
-            Info = streamInfo;
+            if (logger is null) throw new ArgumentNullException(nameof(logger));
+            if (streamInfo is null) throw new ArgumentNullException(nameof(streamInfo));
 
-#pragma warning disable CA1062 // Validate arguments of public methods
+            Info = streamInfo;
             Path = streamInfo.Path;
-#pragma warning restore CA1062 // Validate arguments of public methods
             _fps = streamInfo.Fps;
             StreamName = streamInfo.Id;
             IsContinuous = streamInfo.IsContinuous;
@@ -99,112 +100,100 @@ namespace VideoFrameAnalyzeStd.VideoCapturing
             return _videoCapture;
         }
 
-        public async Task StopProcessingAsync()
-        {
-            LogTrace("Producer: stopping, destroy reader and timer");
-            _stopping = true;
-            if (_executionTask != null)
-            {
-                await _executionTask.ConfigureAwait(false);
-                _executionTask = null;
-            }
-            _stopping = false;
-        }
-
-        public void StartProcessingAsync(Channel<VideoFrame> outputChannel, TimeSpan publicationInterval)
+        public void StartCapturing(Channel<VideoFrame> outputChannel, TimeSpan publicationInterval)
         {
             _executionTask = Task.Run(async () =>
             {
                 var writer = outputChannel.Writer;
                 while (!_stopping)
                 {
-                    await RobustCapture(publicationInterval, writer).ConfigureAwait(false);
+                    try
+                    {
+                        await StartCaptureAsync(publicationInterval, writer).ConfigureAwait(false);
+                    }
+#pragma warning disable CA1031 // Do not catch general exception types
+                    catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
+                    {
+                        _logger.LogError(ex, "Exception in processes videostream {name}, restarting", this.StreamName);
+                    }
                 }
                 writer.Complete();
             });
             // We reach this point by breaking out of the while loop. So we must be stopping.
         }
 
-        private async Task RobustCapture(TimeSpan publicationInterval, ChannelWriter<VideoFrame> writer)
+        private async Task StartCaptureAsync(TimeSpan publicationInterval, ChannelWriter<VideoFrame> writer)
         {
-            try
+            using var reader = this.InitCapture();
+            var width = reader.FrameWidth;
+            var height = reader.FrameHeight;
+            int frameCount = 0;
+            int delayMs = (int)(500.0 / this.Fps);
+            int errorCount = 0;
+
+            using Mat imageBuffer = new Mat();
+            Mat publishedImage;
+
+            var nextpublicationTime = DateTime.Now;
+            while (!_stopping)
             {
-                using var reader = this.InitCapture();
-                var width = reader.FrameWidth;
-                var height = reader.FrameHeight;
-                int frameCount = 0;
-                int delayMs = (int)(500.0 / this.Fps);
-                int errorCount = 0;
+                var startTime = DateTime.Now;
+                // Grab single frame.
+                var timestamp = DateTime.Now;
 
-                using Mat imageBuffer = new Mat();
-                Mat publishedImage;
+                bool success = reader.Read(imageBuffer);
+                frameCount++;
 
-                var nextpublicationTime = DateTime.Now;
-                while (!_stopping)
+                var endTime = DateTime.Now;
+                LogTrace("Producer: frame-grab took {0} ms", (endTime - startTime).Milliseconds);
+
+                if (!success)
                 {
-                    var startTime = DateTime.Now;
-                    // Grab single frame.
-                    var timestamp = DateTime.Now;
-
-                    bool success = reader.Read(imageBuffer);
-                    frameCount++;
-
-                    var endTime = DateTime.Now;
-                    LogTrace("Producer: frame-grab took {0} ms", (endTime - startTime).Milliseconds);
-
-                    if (!success)
+                    // If we've reached the end of the video, stop here.
+                    if (IsContinuous)
                     {
-                        // If we've reached the end of the video, stop here.
-                        if (IsContinuous)
-                        {
-                            errorCount++;
-                            // If failed on live camera, try again.
-                            LogWarning("Producer: null frame from live camera, continue! ({0} errors)", errorCount);
+                        errorCount++;
+                        // If failed on live camera, try again.
+                        LogWarning("Producer: null frame from live camera, continue! ({0} errors)", errorCount);
 
-                            if (errorCount < 5)
-                            {
-                                LogWarning("Error in capture, retry");
-                                continue;
-                            }
-                            else
-                            {
-                                LogWarning("Errorcount exceeded, restarting videocapture");
-                                break;
-                            }
+                        if (errorCount < 5)
+                        {
+                            LogWarning("Error in capture, retry");
+                            continue;
                         }
                         else
                         {
-                            LogWarning("Producer: null frame from video file, stop!");
-                            // This will call StopProcessing on a new thread.
-                            _stopping = true;
-                            // Break out of the loop to make sure we don't try grabbing more
-                            // frames.
+                            LogWarning("Errorcount exceeded, restarting videocapture");
                             break;
                         }
                     }
-                    else if (timestamp > nextpublicationTime)
+                    else
                     {
-                        LogTrace("Producer: create frame to publish:");
-                        nextpublicationTime = timestamp + publicationInterval;
-
-                        publishedImage = PreprocessImage(imageBuffer);
-
-                        // Package the image for submission.
-                        VideoFrameMetadata meta = new VideoFrameMetadata(timestamp, frameCount, this.Info);
-                        VideoFrame vframe = new VideoFrame(publishedImage, meta);
-
-                        LogTrace("Producer: do publishing");
-                        var writeResult = writer.TryWrite(vframe);
+                        LogWarning("Producer: null frame from video file, stop!");
+                        // This will call StopProcessing on a new thread.
+                        _stopping = true;
+                        // Break out of the loop to make sure we don't try grabbing more
+                        // frames.
+                        break;
                     }
-                    //Thread.Sleep(delayMs);
-                    await Task.Delay(delayMs).ConfigureAwait(false);
                 }
-            }
-#pragma warning disable CA1031 // Do not catch general exception types
-            catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
-            {
-                _logger.LogError(ex, "Exception in processes videostream {name}, restarting", this.StreamName);
+                else if (timestamp > nextpublicationTime)
+                {
+                    LogTrace("Producer: create frame to publish:");
+                    nextpublicationTime = timestamp + publicationInterval;
+
+                    publishedImage = PreprocessImage(imageBuffer);
+
+                    // Package the image for submission.
+                    VideoFrameContext meta = new VideoFrameContext(timestamp, frameCount, this.Info);
+                    VideoFrame vframe = new VideoFrame(publishedImage, meta);
+
+                    LogTrace("Producer: do publishing");
+                    var writeResult = writer.TryWrite(vframe);
+                }
+                //Thread.Sleep(delayMs);
+                await Task.Delay(delayMs).ConfigureAwait(false);
             }
         }
 
@@ -229,12 +218,26 @@ namespace VideoFrameAnalyzeStd.VideoCapturing
             return publishedImage;
         }
 
+        public async Task StopProcessingAsync()
+        {
+            LogTrace("Producer: stopping, destroy reader and timer");
+            _stopping = true;
+            if (_executionTask != null)
+            {
+                await _executionTask.ConfigureAwait(false);
+                _executionTask = null;
+            }
+            _stopping = false;
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
+                    _stopping = true;
+                    //StopProcessingAsync().Wait();
                     _videoCapture?.Dispose();
                     _videoCapture = null;
                     _executionTask?.Wait();

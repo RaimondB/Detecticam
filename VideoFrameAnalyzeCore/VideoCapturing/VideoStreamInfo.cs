@@ -3,7 +3,7 @@
 using OpenCvSharp;
 using System;
 
-namespace VideoFrameAnalyzeStd.VideoCapturing
+namespace DetectiCam.Core.VideoCapturing
 {
     public class VideoStreamInfo
     {

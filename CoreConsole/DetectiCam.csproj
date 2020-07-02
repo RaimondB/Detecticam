@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\VideoFrameAnalyzeCore\VideoFrameAnalyzeCore.csproj" />
+    <ProjectReference Include="..\VideoFrameAnalyzeCore\DetectiCam.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

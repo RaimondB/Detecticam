@@ -1,3 +1,3 @@
 dotnet clean
 
-docker build --file DockerFile -t camerawatcher:1.1 ..
+docker build --file DockerFile -t detect-i-cam:1.0 ..

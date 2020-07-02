@@ -8,9 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using VideoFrameAnalyzer;
-using VideoFrameAnalyzeStd.Detection;
-using VideoFrameAnalyzeStd.VideoCapturing;
+using DetectiCam.Core.Detection;
+using DetectiCam.Core.VideoCapturing;
 
 namespace CameraWatcher
 {
@@ -37,8 +36,8 @@ namespace CameraWatcher
                     services.AddHttpClient();
                     services.AddHostedService<BatchedCameraWatcherService>();
                     services.AddSingleton<IBatchedDnnDetector, Yolo3BatchedDnnDetector>();
-                    services.AddSingleton<MultiStreamBatchedFrameGrabber<DnnDetectedObject[][]>,
-                        MultiStreamBatchedFrameGrabber<DnnDetectedObject[][]>>();
+                    services.AddSingleton<MultiStreamBatchedPipeline<DnnDetectedObject[][]>,
+                        MultiStreamBatchedPipeline<DnnDetectedObject[][]>>();
                 }
             })
             .ConfigureLogging(logging =>
