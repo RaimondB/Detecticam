@@ -1,0 +1,10 @@
+---
+version: "2.2"
+services:
+  detecticam:
+    image: detecticam:1.0
+    container_name: detecticam
+    volumes:
+      - ./capture:/captures # location to write annotated captured frames to
+      - ./config:/config    # directory to load appsettings.json configuration file from
+    restart: unless-stopped
