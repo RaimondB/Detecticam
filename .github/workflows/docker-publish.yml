@@ -51,7 +51,7 @@ jobs:
       - uses: docker/build-push-action@v1
         with:
           path: .
-          dockerfile: "./Detecticam/Dockerfile"
+          dockerfile: "Detecticam\/Dockerfile"
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: myorg/myrepository
