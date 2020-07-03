@@ -48,13 +48,15 @@ jobs:
       - uses: actions/checkout@v1
       - name: Check Result
         run: pwd & ls -l
-      - uses: docker/build-push-action@v1
-        with:
-          path: .
-          dockerfile: Detecticam/Dockerfile
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: myorg/myrepository
-          tag_with_ref: true
-          push: ${{ startsWith(github.ref, 'refs/tags/') }}
+      - name: Build image
+        run: docker build . -f Detecticam/Dockerfile
+#      - uses: docker/build-push-action@v1
+#        with:
+#          path: .
+#          dockerfile: Detecticam/Dockerfile
+#          username: ${{ secrets.DOCKER_USERNAME }}
+#          password: ${{ secrets.DOCKER_PASSWORD }}
+#          repository: myorg/myrepository
+#          tag_with_ref: true
+#          push: ${{ startsWith(github.ref, 'refs/tags/') }}
 
