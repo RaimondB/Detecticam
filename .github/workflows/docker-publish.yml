@@ -49,7 +49,7 @@ jobs:
       - name: Check Result
         run: pwd & ls -l
       - name: Build image
-        run: docker build . -f Detecticam/Dockerfile
+        run: docker build . -f DetectiCam/Dockerfile
 #      - uses: docker/build-push-action@v1
 #        with:
 #          path: .
