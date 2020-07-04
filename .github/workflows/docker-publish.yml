@@ -46,12 +46,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: Check Result
-        run: pwd & ls -l
+#      - name: Check Result
+#        run: pwd & ls -l
+#      - name: Build image
+#        run: docker build . -f DetectiCam/Dockerfile
       - uses: docker/build-push-action@v1
         with:
           path: .
-          dockerfile: "./Detecticam/Dockerfile"
+          dockerfile: DetectiCam/Dockerfile
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: myorg/myrepository
