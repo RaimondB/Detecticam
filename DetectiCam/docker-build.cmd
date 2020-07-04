@@ -1,3 +1,4 @@
 dotnet clean
 
-docker build --file DockerFile -t detect-i-cam:1.0 ..
+docker build  --file DockerFile -t detect-i-cam:dev ..
+REM --target base -t detect-i-cam:latest ..

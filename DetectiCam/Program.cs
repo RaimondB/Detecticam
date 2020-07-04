@@ -21,7 +21,7 @@ namespace CameraWatcher
             .ConfigureAppConfiguration((hostingContext, config) =>
             {
                 ConfigureConfigDir(hostingContext, config);
-
+                
                 config.AddEnvironmentVariables(prefix: "CAMERAWATCH_");
             })
             .ConfigureServices((hostContext, services) =>

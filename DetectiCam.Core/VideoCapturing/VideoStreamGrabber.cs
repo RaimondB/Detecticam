@@ -1,4 +1,4 @@
-﻿#define TRACE_GRABBER
+﻿//#define TRACE_GRABBER
 #nullable enable
 
 using Microsoft.Extensions.Logging;
@@ -56,16 +56,6 @@ namespace DetectiCam.Core.VideoCapturing
             _logger = logger;
         }
 
-        private void LogInformation(string format, params object[] args)
-        {
-            _logger.LogInformation(String.Format(CultureInfo.InvariantCulture, format, args));
-        }
-
-        private void LogWarning(string format, params object[] args)
-        {
-            _logger.LogWarning(String.Format(CultureInfo.InvariantCulture, format, args));
-        }
-
         [Conditional("TRACE_GRABBER")]
         private void LogTrace(string format, params object[] args)
         {
@@ -82,19 +72,19 @@ namespace DetectiCam.Core.VideoCapturing
 
                 if (rFpds > 0 && rFpds < 60)
                 {
-                    LogInformation($"Init Fps from stream:{this.Info.Id} at {rFpds}");
+                    _logger.LogInformation($"Init Fps from stream:{this.Info.Id} at {rFpds}");
                     _fps = rFpds;
 
                 }
                 else
                 {
-                    LogInformation($"Fps {rFpds} invalid Init Fps from stream:{this.Info.Id}. Fallback to 30 fps");
+                    _logger.LogInformation($"Fps {rFpds} invalid Init Fps from stream:{this.Info.Id}. Fallback to 30 fps");
                     _fps = 30;
                 }
             }
             else
             {
-                LogInformation($"Init Forced Fps from stream:{this.Info.Id} at {Fps}");
+                _logger.LogInformation($"Init Forced Fps from stream:{this.Info.Id} at {Fps}");
             }
 
             return _videoCapture;
@@ -155,22 +145,22 @@ namespace DetectiCam.Core.VideoCapturing
                     {
                         errorCount++;
                         // If failed on live camera, try again.
-                        LogWarning("Producer: null frame from live camera, continue! ({0} errors)", errorCount);
+                        _logger.LogWarning("Producer: null frame from live camera, continue! ({0} errors)", errorCount);
 
                         if (errorCount < 5)
                         {
-                            LogWarning("Error in capture, retry");
+                            _logger.LogWarning("Error in capture, retry");
                             continue;
                         }
                         else
                         {
-                            LogWarning("Errorcount exceeded, restarting videocapture");
+                            _logger.LogWarning("Errorcount exceeded, restarting videocapture");
                             break;
                         }
                     }
                     else
                     {
-                        LogWarning("Producer: null frame from video file, stop!");
+                        _logger.LogWarning("Producer: null frame from video file, stop!");
                         // This will call StopProcessing on a new thread.
                         _stopping = true;
                         // Break out of the loop to make sure we don't try grabbing more

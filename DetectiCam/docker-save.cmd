@@ -1,1 +1,1 @@
-docker save -o ..\..\detect-i-cam.tar detect-i-cam:1.0
+docker save -o ..\..\detect-i-cam.tar detect-i-cam:latest

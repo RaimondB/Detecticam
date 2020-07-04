@@ -1,17 +1,7 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-
-FROM mcr.microsoft.com/dotnet/core/runtime-deps:3.1-bionic AS base
-#FROM mcr.microsoft.com/dotnet/core/runtime:3.1.5-bionic AS base
-#FROM mcr.microsoft.com/dotnet/core/runtime:3.1-buster-slim AS base
-WORKDIR /app
-COPY ["DetectiCam/install-opencv-min-deps.sh", "/app"]
-RUN chmod +x /app/install-opencv-min-deps.sh
-RUN /app/install-opencv-min-deps.sh
-
-FROM base AS basedata
-WORKDIR /data
-#COPY ["YoloData/*", "/yolo-data/"]
+FROM raimondb/opencv-dotnet-runtime-deps AS base
+COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"] 
 
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1.301-bionic AS build
 WORKDIR /src
@@ -25,7 +15,7 @@ RUN dotnet build "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 -o /a
 FROM build AS publish
 RUN dotnet publish "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=true -o /app/publish
 
-FROM basedata AS final
+FROM base AS final
 VOLUME /captures
 VOLUME /config
 WORKDIR /app
