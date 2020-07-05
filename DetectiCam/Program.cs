@@ -59,14 +59,14 @@ namespace CameraWatcher
                 configPath = Path.GetFullPath(basePathConfig);
                 if (Directory.Exists(configPath))
                 {
-                    Console.WriteLine($"ConfigDir for configuration:{configPath}");
+                    //Console.WriteLine($"ConfigDir for configuration:{configPath}");
                     config.AddJsonFile(Path.GetFullPath("appsettings.json", configPath));
                 }
             }
             if (String.IsNullOrEmpty(configPath))
             {
                 configPath = Directory.GetCurrentDirectory();
-                Console.WriteLine($"ConfigDir not specified, falling back to default location:{configPath}");
+                //Console.WriteLine($"ConfigDir not specified, falling back to default location:{configPath}");
             }
 
             var Dict = new Dictionary<string, string>

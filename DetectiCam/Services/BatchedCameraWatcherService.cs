@@ -17,7 +17,7 @@ using DetectiCam.Core.Detection;
 
 namespace CameraWatcher
 {
-    public class BatchedCameraWatcherService : IHostedService
+    public class BatchedCameraWatcherService : BackgroundService
     {
         private readonly ILogger _logger;
         private readonly IHostApplicationLifetime _appLifetime;
@@ -67,14 +67,14 @@ namespace CameraWatcher
             }
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
-        {
-            _appLifetime.ApplicationStarted.Register(OnStarted, false);
+        //public override Task StartAsync(CancellationToken cancellationToken)
+        //{
+        //    _appLifetime.ApplicationStarted.Register(OnStarted, false);
 
-            return Task.CompletedTask;
-        }
+        //    return Task.CompletedTask;
+        //}
 
-        private void OnStarted()
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
@@ -89,13 +89,15 @@ namespace CameraWatcher
             {
                 var resultReader = _grabber.OutputChannel.Reader;
 
-                await foreach(var result in resultReader.ReadAllAsync(_appLifetime.ApplicationStopping).ConfigureAwait(false))
+                await foreach(var result in resultReader.ReadAllAsync(stoppingToken).ConfigureAwait(false))
                 {
                     await ProcessAnalysisResult(result).ConfigureAwait(false);
                 }
             });
 
-            _grabber.StartProcessingAll();
+            _grabber.StartProcessingAll(stoppingToken);
+
+            return _resultWriterTask;
         }
 
         private async Task ProcessAnalysisResult(AnalysisResult<DnnDetectedObject[][]> e)
@@ -147,13 +149,12 @@ namespace CameraWatcher
             }
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public override async Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Process received stop signal.");
 
-            //await _grabber.StopProcessingAsync().ConfigureAwait(false);
+            await _grabber.StopProcessingAsync().ConfigureAwait(false);
             //_grabber.Dispose();
-            return Task.CompletedTask;
         }
 
         private static string GetTimestampedSortable(VideoFrameContext metaData)
@@ -169,14 +170,21 @@ namespace CameraWatcher
 
                 DnnDetectedObject[][] result;
 
-                var watch = new Stopwatch();
-                watch.Start();
+                if (images.Count > 0)
+                {
+                    var watch = new Stopwatch();
+                    watch.Start();
 
-                result = _detector.ClassifyObjects(images);
+                    result = _detector.ClassifyObjects(images);
 
-                watch.Stop();
-                _logger.LogInformation($"Classifiy-objects ms:{watch.ElapsedMilliseconds}");
-
+                    watch.Stop();
+                    _logger.LogInformation($"Classifiy-objects ms:{watch.ElapsedMilliseconds}");
+                }
+                else
+                {
+                    _logger.LogWarning("No images to run detector on");
+                    result = Array.Empty<DnnDetectedObject[]>();
+                }
                 return result;
             }
 

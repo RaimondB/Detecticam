@@ -79,27 +79,6 @@ namespace DetectiCam.Core.VideoCapturing
             OutputChannel = CreateOutputChannel();
         }
 
-        /// <summary> (Only available in TRACE_GRABBER builds) logs a message. </summary>
-        /// <param name="format"> Describes the format to use. </param>
-        /// <param name="args">   Event information. </param>
-        [Conditional("TRACE_GRABBER")]
-        protected void LogMessage(string format, params object[] args)
-        {
-            _logger.LogInformation(String.Format(CultureInfo.InvariantCulture, format, args));
-        }
-
-        [Conditional("TRACE_GRABBER")]
-        protected void LogDebug(string format, params object[] args)
-        {
-            _logger.LogDebug(String.Format(CultureInfo.InvariantCulture, format, args));
-        }
-
-        [Conditional("TRACE_GRABBER")]
-        protected void LogWarning(string format, params object[] args)
-        {
-            _logger.LogDebug(String.Format(CultureInfo.InvariantCulture, format, args));
-        }
-
         protected async Task<AnalysisResult<TOutput>?> DoAnalyzeFrames(IList<VideoFrame> frames)
         {
             using CancellationTokenSource source = new CancellationTokenSource();
@@ -111,7 +90,7 @@ namespace DetectiCam.Core.VideoCapturing
             {
                 var output = new AnalysisResult<TOutput>(frames);
                 var task = fcn(frames);
-                LogDebug("DoAnalysis: started task {0}", task.Id);
+                _logger.LogDebug("DoAnalysis: started task {taskId}", task.Id);
                 try
                 {
                     if (task == await Task.WhenAny(task, Task.Delay(AnalysisTimeout, source.Token)).ConfigureAwait(false))
@@ -121,7 +100,7 @@ namespace DetectiCam.Core.VideoCapturing
                     }
                     else
                     {
-                        LogWarning("DoAnalysis: Timeout from task {0}", task.Id);
+                        _logger.LogDebug("DoAnalysis: Timeout from task {taskId}", task.Id);
                         output.TimedOut = true;
                     }
                 }
@@ -130,10 +109,10 @@ namespace DetectiCam.Core.VideoCapturing
 #pragma warning restore CA1031 // Do not catch general exception types
                 {
                     output.Exception = ae;
-                    LogWarning("DoAnalysis: Exception from task {0}:{1}", task.Id, ae.Message);
+                    _logger.LogWarning("DoAnalysis: Exception from task {0}:{1}", task.Id, ae.Message);
                 }
 
-                LogDebug("DoAnalysis: returned from task {0}", task.Id);
+                _logger.LogDebug("DoAnalysis: returned from task {0}", task.Id);
 
                 return output;
             }
@@ -181,31 +160,41 @@ namespace DetectiCam.Core.VideoCapturing
 
         private readonly List<Channel<VideoFrame>> _capturingChannels = new List<Channel<VideoFrame>>();
 
-
-        public void StartProcessingFileAsync(VideoStreamInfo streamInfo)
+        public void StartCapturingAllStreamsAsync(CancellationToken cancellationToken)
         {
-            VideoStreamGrabber vs = new VideoStreamGrabber(_logger, streamInfo);
+            _logger.LogInformation("Start Capturing All Streams");
+            foreach (var stream in _streams)
+            {
+                _logger.LogInformation("Start Capturing: {streamId}", stream.Info.Id);
+                stream.StartCapturing(TimeSpan.FromSeconds(3), cancellationToken);
+            }
+        }
 
-            _streams.Add(vs);
+        private void CreateCapturingChannel(VideoStreamInfo streamInfo)
+        {
+            _logger.LogInformation("CreateCapturingChannel: {streamId}", streamInfo.Id);
 
             var newChannel = CreateCapturingChannel();
             _capturingChannels.Add(newChannel);
 
-            vs.StartCapturing(newChannel, TimeSpan.FromSeconds(3));
+            VideoStreamGrabber vs = new VideoStreamGrabber(_logger, streamInfo, newChannel);
+
+            _streams.Add(vs);
+
         }
 
-        public void StartCapturingAllStreamsAsync()
+        private void CreateCapturingChannels()
         {
-            LogMessage("Start Capturing All Streams");
+            _logger.LogInformation("CreateCapturingChannels");
             foreach (var si in _streamsConfig)
             {
-                _logger.LogInformation("Start Capturing: {streamId}", si.Id);
-                StartProcessingFileAsync(si);
+                CreateCapturingChannel(si);
             }
         }
 
+
         public Task MergeChannels<T>(
-            IList<Channel<T>> inputChannels, Channel<IList<T>> outputChannel)
+            IList<Channel<T>> inputChannels, Channel<IList<T>> outputChannel, CancellationToken cancellationToken)
         {
             return Task.Run(async () =>
             {
@@ -214,7 +203,7 @@ namespace DetectiCam.Core.VideoCapturing
                 var readers = inputChannels.Select(c => c.Reader).ToArray();
                 var writer = outputChannel.Writer;
 
-                while (!_stopping)
+                while (!_stopping && !cancellationToken.IsCancellationRequested)
                 {
                     List<T> results = new List<T>();
 
@@ -222,47 +211,57 @@ namespace DetectiCam.Core.VideoCapturing
                     {
                         try
                         {
-                            var result = await readers[index].ReadAsync().ConfigureAwait(false);
-                            results.Add(result);
+                            var curReader = readers[index];
+                            if (curReader != null)
+                            {
+                                var result = await readers[index].ReadAsync(cancellationToken).ConfigureAwait(false);
+                                results.Add(result);
+                            }
+                        }
+                        catch(ChannelClosedException)
+                        {
+                            _logger.LogWarning("Channel closed");
+                            //readers[index] = null;
                         }
 #pragma warning disable CA1031 // Do not catch general exception types
                         catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
                         {
-                            LogMessage($"Exception during channel merge:{ex}");
+                            _logger.LogError("Exception during channel merge:{exception}", ex);
                             //Just continue to next on errors or timeouts
                         }
                     }
                     if(!writer.TryWrite(results))
                     {
-                        LogWarning("Could not write merged result!");
+                        _logger.LogWarning("Could not write merged result!");
                     }
                 }
-            });
+            }, cancellationToken);
         }
 
         /// <summary> Starts capturing and processing video frames. </summary>
         /// <param name="frameGrabDelay"> The frame grab delay. </param>
         /// <param name="timestampFn">    Function to generate the timestamp for each frame. This
         ///     function will get called once per frame. </param>
-        public void StartProcessingAll()
+        public void StartProcessingAll(CancellationToken cancellationToken)
         {
+            CreateCapturingChannels();
             var analysisChannel = CreateMultiFrameChannel();
-            _mergeTask = MergeChannels(_capturingChannels, analysisChannel);
+            _mergeTask = MergeChannels(_capturingChannels, analysisChannel, cancellationToken);
 
-            LogMessage("Starting Consumer Task");
+            _logger.LogInformation("Starting Consumer Task");
             _consumerTask = Task.Run(async () =>
             {
                 var reader = analysisChannel.Reader;
                 var writer = OutputChannel.Writer;
 
-                while (!_stopping)
+                while (!_stopping && !cancellationToken.IsCancellationRequested)
                 {
-                    LogMessage("Consumer: waiting for next result to arrive");
+                    _logger.LogInformation("Consumer: waiting for next result to arrive");
 
                     try
                     {
-                        var vframes = await reader.ReadAsync().ConfigureAwait(false);
+                        var vframes = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
                         var startTime = DateTime.Now;
 
@@ -270,29 +269,29 @@ namespace DetectiCam.Core.VideoCapturing
 
                         if (result != null)
                         {
-                            LogMessage("Consumer: analysis took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
+                            _logger.LogInformation("Consumer: analysis took {analysisDuration} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
                             writer.TryWrite(result);
                             //await writer.WriteAsync(result).ConfigureAwait(false);
                         }
                         else
                         {
-                            LogWarning("Consumer: analysis returned null!");
+                            _logger.LogWarning("Consumer: analysis returned null!");
                         }
                     }
 #pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
                     {
-                        LogMessage($"Exception in consumertask:{ex.Message}");
+                        _logger.LogError(ex, "Exception in consumertask");
                         //try to continue always
                     }
                 }
 
-                LogMessage("Consumer: stopping");
+                _logger.LogInformation("Consumer: stopping");
             });
 
-            StartCapturingAllStreamsAsync();
+            StartCapturingAllStreamsAsync(cancellationToken);
         }
 
         /// <summary> Stops capturing and processing video frames. </summary>
@@ -302,27 +301,28 @@ namespace DetectiCam.Core.VideoCapturing
         {
             _stopping = true;
 
-            LogMessage("Stopping consumer task");
-            if (_consumerTask != null)
-            {
-                await _consumerTask;
-                _consumerTask = null;
-            }
-
-            LogMessage("Stopping merge task");
-            if (_mergeTask != null)
-            {
-                await _mergeTask;
-                _mergeTask = null;
-            }
-
-            LogMessage("Stopping capturing tasks");
+            _logger.LogInformation("Stopping capturing tasks");
             foreach (VideoStreamGrabber vs in _streams)
             {
                 await vs.StopProcessingAsync();
                 vs.Dispose();
             }
             _streams.Clear();
+
+
+            _logger.LogInformation("Stopping consumer task");
+            if (_consumerTask != null)
+            {
+                await _consumerTask;
+                _consumerTask = null;
+            }
+
+            _logger.LogInformation("Stopping merge task");
+            if (_mergeTask != null)
+            {
+                await _mergeTask;
+                _mergeTask = null;
+            }
 
             _stopping = false;
         }
