@@ -2,8 +2,8 @@
 version: "2.2"
 services:
   detecticam:
-    image: detecticam:1.0
-    container_name: detecticam
+    image: raimondb/detect-i-cam:1.0
+    container_name: detect-i-cam
     volumes:
       - ./capture:/captures # location to write annotated captured frames to
       - ./config:/config    # directory to load appsettings.json configuration file from
