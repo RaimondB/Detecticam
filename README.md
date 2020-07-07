@@ -15,10 +15,27 @@ This solution offers the following features:
 Your can run Detect-i-cam as a docker container or as a commandline tool. Docker is advised.
 
 ## Using Detect-i-cam with docker
-* Pull the image located at ...
-* Linux based image
-* Run it directly, or use [docker-compose](./docker-example/docker-compose.yml)
-* Provide your config file as indicated below in the *config volume*
+* Pull the linux based image
+```
+docker pull raimondb/detect-i-cam
+```
+
+* Run it directly, or use docker-compose as in the example below
+* Provide your appsettings.json config file as indicated below in the *config volume*
+
+```yaml
+---
+version: "2.2"
+services:
+  detect-i-cam:
+    image: raimondb/detect-i-cam
+    container_name: detect-i-cam
+    volumes:
+      - ./capture:/captures
+      - ./config:/config
+    restart: unless-stopped
+```
+
 
 ## Using Detect-i-cam as a CommandLine application
 * Provide an appsettings.json file configured as indication below.
