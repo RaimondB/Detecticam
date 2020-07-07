@@ -54,15 +54,21 @@ Only the id and path are required. A path can be a videostream file (need to be 
 {
   "video-streams": [
     {
-      "id": "side-door-live", // unique id identifying the camera stream
-      "path": "rtsp://<user>:<passwd>@<cameraip>:<port>/<part>", // different for each cam, check your docs
-      //"rotate": "Rotate90Clockwise", // optionally rotate the videostream before executing detections
-      //"fps": 15, // override Fps if not correctly picked up from the videostream.
-      //"callbackUrl": "http:\/\/nas.home:5000\/webapi\/entry.cgi?api=SYNO.SurveillanceStation.Webhook&method=\"Incoming\"&version=1&token=x
+      "id": "side-door-live",
+      "path": "rtsp://<user>:<passwd>@<cameraip>:<port>/<part>",
+      "rotate": "Rotate90Clockwise",
+      "fps": 15,
+      "callbackUrl": "http:\/\/nas.home:5000\/webapi\/entry.cgi?api=SYNO.SurveillanceStation.Webhook&method=\"Incoming\"&version=1&token=x"
     }
   ]
 }
 ```
+* *id*: Mandatory, unique id identifying the camera stream
+* *path*: Mandatory file, http or rstp stream. Please check the docs of you IP-cam on the correct format.
+* *rotate*: Optional, when left out no rotation happens. Can be usefull if your cam does not support rotation natively.
+* *fps*: Optional, only needed if the log shows that the settings cannot be picked up from the stream. If nothing can be found, and not specified, defaults to 30.
+* *callbackUr*l: Optional, webhook to trigger on detection
+
 ### Captures or Callback
 By default, all captured images containing a "person" are written to the /captures volume, including bounding boxes of all detected objects and their confidence percentage.
 When you want to integrate with other solutions, you can specifiy a callback url. In the example I am using a webhook to trigger recording on my synology NAS.
@@ -76,14 +82,20 @@ The below "yolov3" section of configuration should than be added to your appsett
 
 ```json
 {
-  "yolo3": { // *Optional* section, only if you want to use different yolo3 compatible datafiles than provided.
-     "rootPath": "/config/yolo-data", // directory to load the yolo data files from
-     "namesFile": "coco.names", // file defining all classnames in coco format
-     "configFile": "yolov3.cfg", // config file in darknet format
-     "weightsFile": "yolov3.weights" // weights file in darknet format
+  "yolo3": {
+     "rootPath": "/config/yolo-data",
+     "namesFile": "coco.names",
+     "configFile": "yolov3.cfg",
+     "weightsFile": "yolov3.weights"
    }
 }
 ```
+
+* *rootPath*: Optional, rootpath to load the three files below from. Located in a directory in the /config volume normally
+* *namesFile*: Optional, Contains are the recognized labels in Coco Format
+* *configFile*: Optional, Darknet Config file
+* *weightsFile*: Optional, Darknet Weights file.
+
 
 ## Contributing
 
