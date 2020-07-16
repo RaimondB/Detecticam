@@ -141,7 +141,7 @@ namespace DetectiCam.Core.VideoCapturing
                 var endTime = DateTime.Now;
                 LogTrace("Producer: frame-grab took {0} ms", (endTime - startTime).Milliseconds);
 
-                if (!success)
+                if (!success || imageBuffer.Empty())
                 {
                     // If we've reached the end of the video, stop here.
                     if (IsContinuous)

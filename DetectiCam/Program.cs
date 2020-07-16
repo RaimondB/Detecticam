@@ -10,6 +10,7 @@ using System.IO;
 using System.Threading.Tasks;
 using DetectiCam.Core.Detection;
 using DetectiCam.Core.VideoCapturing;
+using DetectiCam.Core.ResultProcessor;
 
 namespace CameraWatcher
 {
@@ -34,10 +35,14 @@ namespace CameraWatcher
                 else
                 {
                     services.AddHttpClient();
+
                     services.AddHostedService<BatchedCameraWatcherService>();
                     services.AddSingleton<IBatchedDnnDetector, Yolo3BatchedDnnDetector>();
-                    services.AddSingleton<MultiStreamBatchedPipeline<DnnDetectedObject[][]>,
-                        MultiStreamBatchedPipeline<DnnDetectedObject[][]>>();
+                    services.AddSingleton<IAsyncSingleResultProcessor, AnnotatedImagePublisher>();
+                    services.AddSingleton<IAsyncSingleResultProcessor, WebhookPublisher>();
+
+                    services.AddSingleton<MultiStreamBatchedPipeline,
+                        MultiStreamBatchedPipeline>();
                 }
             })
             .ConfigureLogging(logging =>

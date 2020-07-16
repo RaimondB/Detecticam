@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Range = OpenCvSharp.Range;
 
 namespace DetectiCam.Core.Detection
@@ -31,6 +33,13 @@ namespace DetectiCam.Core.Detection
         private readonly OpenCvSharp.Dnn.Net nnet;
         private readonly Mat[] outs;
         private readonly string[] _outNames;
+        private bool disposedValue;
+
+        private const float threshold = 0.5f;       //for confidence 
+        private const float nmsThreshold = 0.3f;    //threshold for nms
+
+
+        private readonly SemaphoreSlim _guard = new SemaphoreSlim(1);
 
         public Yolo3BatchedDnnDetector(ILogger<IDnnDetector> logger, IConfiguration configuration)
         {
@@ -54,29 +63,34 @@ namespace DetectiCam.Core.Detection
 
             nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(Cfg, Weight);
             //nnet.SetPreferableBackend(Net.Backend.INFERENCE_ENGINE);
-            //nnet.SetPreferableTarget(Net.Target.CPU);
+            nnet.SetPreferableTarget(Net.Target.OPENCL);
             _outNames = nnet.GetUnconnectedOutLayersNames()!;
 
             outs = Enumerable.Repeat(false, _outNames.Length).Select(_ => new Mat()).ToArray();
         }
 
-        public DnnDetectedObject[][] ClassifyObjects(IEnumerable<Mat> images)
+        public async Task<DnnDetectedObject[][]> ClassifyObjects(IEnumerable<Mat> images, CancellationToken cancellationToken)
         {
-            if (images == null)
+
+            if (images is null) throw new ArgumentNullException(nameof(images));
+
+            try
             {
-                throw new ArgumentNullException($"{nameof(images)}");
+                //Make this operation threadsafe since it is reusing structures to save on memory allocations
+                await _guard.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+                using var blob = CvDnn.BlobFromImages(images, 1.0 / 255, new Size(320, 320), crop: false);
+                nnet.SetInput(blob);
+
+                //forward model
+                nnet.Forward(outs, _outNames);
+
+                return ExtractYolo3BatchedResults(outs, images, threshold, nmsThreshold);
             }
-
-            using var blob = CvDnn.BlobFromImages(images, 1.0 / 255, new Size(320, 320), crop: false);
-            nnet.SetInput(blob);
-
-            //forward model
-            nnet.Forward(outs, _outNames);
-
-            const float threshold = 0.5f;       //for confidence 
-            const float nmsThreshold = 0.3f;    //threshold for nms
-
-            return ExtractYolo3BatchedResults(outs, images, threshold, nmsThreshold);
+            finally
+            {
+                _guard.Release();
+            }
         }
 
 
@@ -182,6 +196,38 @@ namespace DetectiCam.Core.Detection
             }
 
             return results;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _guard.Dispose();
+                    if (nnet.IsEnabledDispose && !nnet.IsDisposed)
+                    {
+                        nnet.Dispose();
+                    }
+
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        ~Yolo3BatchedDnnDetector()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
