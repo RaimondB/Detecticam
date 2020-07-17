@@ -279,14 +279,18 @@ namespace DetectiCam.Core.VideoCapturing
 
                     using Mat inputImage = frame.Image;
 
-                    _logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}. Sending to result processors");
-
-                    var resultTasks = new List<Task>();  
-                    foreach (var processor in _resultProcessors)
+                    _logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}.");
+                    if (analysis.Length > 0 && analysis.Any(o => o.Label == "person"))
                     {
-                        resultTasks.Add(processor.ProcessResultAsync(frame, analysis));
+                        _logger.LogInformation($"Person detected for frame acquired at {frame.Metadata.Timestamp}. Sending to result processors");
+
+                        var resultTasks = new List<Task>();
+                        foreach (var processor in _resultProcessors)
+                        {
+                            resultTasks.Add(processor.ProcessResultAsync(frame, analysis));
+                        }
+                        await Task.WhenAll(resultTasks).ConfigureAwait(false);
                     }
-                    await Task.WhenAll(resultTasks).ConfigureAwait(false);
                 }
             }
         }

@@ -65,17 +65,13 @@ namespace DetectiCam.Core.ResultProcessor
 
             if (!String.IsNullOrEmpty(_captureOutputPath))
             {
-                if (results.Length > 0 && results.Any(o => o.Label == "person"))
-                {
-                    var info = frame.Metadata.Info;
-                    _logger.LogInformation($"Interesting Detection For: {info.Id}");
+                var info = frame.Metadata.Info;
 
-                    using var result = Visualizer.AnnotateImage(frame.Image, results.ToArray());
-                    var filename = $"obj-{GetTimestampedSortable(frame.Metadata)}.jpg";
-                    var filePath = Path.Combine(_captureOutputPath, filename);
-                    Cv2.ImWrite(filePath, result);
-                    _logger.LogInformation($"Interesting Detection Saved: {filename}");
-                }
+                using var result = Visualizer.AnnotateImage(frame.Image, results.ToArray());
+                var filename = $"obj-{GetTimestampedSortable(frame.Metadata)}.jpg";
+                var filePath = Path.Combine(_captureOutputPath, filename);
+                Cv2.ImWrite(filePath, result);
+                _logger.LogInformation($"Interesting Detection Saved: {filename}");
             }
 
             return Task.CompletedTask;
