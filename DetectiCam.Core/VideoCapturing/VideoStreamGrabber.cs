@@ -35,13 +35,14 @@ namespace DetectiCam.Core.VideoCapturing
         private Task? _executionTask;
         private readonly ILogger _logger;
         public VideoStreamInfo Info { get; }
+        public Channel<VideoFrame> OutputChannel { get; }
 
-        public VideoStreamGrabber(ILogger logger, string streamName, string path, double fps = 0, bool isContinuous = true, RotateFlags? rotateFlags = null)
-            : this(logger, new VideoStreamInfo() { Id = streamName, Path = path, Fps = fps, IsContinuous = isContinuous, RotateFlags = rotateFlags })
-        {
-        }
+        //public VideoStreamGrabber(ILogger logger, string streamName, string path, double fps = 0, bool isContinuous = true, RotateFlags? rotateFlags = null)
+        //    : this(logger, new VideoStreamInfo() { Id = streamName, Path = path, Fps = fps, IsContinuous = isContinuous, RotateFlags = rotateFlags })
+        //{
+        //}
 
-        public VideoStreamGrabber(ILogger logger, VideoStreamInfo streamInfo)
+        public VideoStreamGrabber(ILogger logger, VideoStreamInfo streamInfo, Channel<VideoFrame> outputChannel)
         {
             if (logger is null) throw new ArgumentNullException(nameof(logger));
             if (streamInfo is null) throw new ArgumentNullException(nameof(streamInfo));
@@ -52,6 +53,8 @@ namespace DetectiCam.Core.VideoCapturing
             StreamName = streamInfo.Id;
             IsContinuous = streamInfo.IsContinuous;
             RotateFlags = streamInfo.RotateFlags;
+            OutputChannel = outputChannel;
+
             _stopping = false;
             _logger = logger;
         }
@@ -90,30 +93,37 @@ namespace DetectiCam.Core.VideoCapturing
             return _videoCapture;
         }
 
-        public void StartCapturing(Channel<VideoFrame> outputChannel, TimeSpan publicationInterval)
+        public void StartCapturing(TimeSpan publicationInterval, CancellationToken cancellationToken)
         {
             _executionTask = Task.Run(async () =>
             {
-                var writer = outputChannel.Writer;
-                while (!_stopping)
+                var writer = this.OutputChannel.Writer;
+                try
                 {
-                    try
+                    while (!cancellationToken.IsCancellationRequested && !_stopping)
                     {
-                        await StartCaptureAsync(publicationInterval, writer).ConfigureAwait(false);
-                    }
+                        try
+                        {
+                            await StartCaptureAsync(publicationInterval, writer, cancellationToken).ConfigureAwait(false);
+                        }
 #pragma warning disable CA1031 // Do not catch general exception types
-                    catch (Exception ex)
+                        catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
-                    {
-                        _logger.LogError(ex, "Exception in processes videostream {name}, restarting", this.StreamName);
+                        {
+                            _logger.LogError(ex, "Exception in processes videostream {name}, restarting", this.StreamName);
+                        }
                     }
                 }
-                writer.Complete();
-            });
-            // We reach this point by breaking out of the while loop. So we must be stopping.
+                finally
+                {
+                    // We reach this point by breaking out of the while loop. So we must be stopping.
+                    _logger.LogInformation($"Capture has stopped for {this.Info.Id}");
+                    writer.TryComplete();
+                }
+            }, cancellationToken);
         }
 
-        private async Task StartCaptureAsync(TimeSpan publicationInterval, ChannelWriter<VideoFrame> writer)
+        private async Task StartCaptureAsync(TimeSpan publicationInterval, ChannelWriter<VideoFrame> writer, CancellationToken cancellationToken)
         {
             using var reader = this.InitCapture();
             var width = reader.FrameWidth;
@@ -126,7 +136,7 @@ namespace DetectiCam.Core.VideoCapturing
             Mat publishedImage;
 
             var nextpublicationTime = DateTime.Now;
-            while (!_stopping)
+            while (!cancellationToken.IsCancellationRequested && !_stopping)
             {
                 var startTime = DateTime.Now;
                 // Grab single frame.
@@ -138,7 +148,7 @@ namespace DetectiCam.Core.VideoCapturing
                 var endTime = DateTime.Now;
                 LogTrace("Producer: frame-grab took {0} ms", (endTime - startTime).Milliseconds);
 
-                if (!success)
+                if (!success || imageBuffer.Empty())
                 {
                     // If we've reached the end of the video, stop here.
                     if (IsContinuous)
@@ -161,7 +171,6 @@ namespace DetectiCam.Core.VideoCapturing
                     else
                     {
                         _logger.LogWarning("Producer: null frame from video file, stop!");
-                        // This will call StopProcessing on a new thread.
                         _stopping = true;
                         // Break out of the loop to make sure we don't try grabbing more
                         // frames.
@@ -183,7 +192,7 @@ namespace DetectiCam.Core.VideoCapturing
                     var writeResult = writer.TryWrite(vframe);
                 }
                 //Thread.Sleep(delayMs);
-                await Task.Delay(delayMs).ConfigureAwait(false);
+                await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -227,11 +236,9 @@ namespace DetectiCam.Core.VideoCapturing
                 if (disposing)
                 {
                     _stopping = true;
-                    //StopProcessingAsync().Wait();
+                    StopProcessingAsync()?.Wait(2000);
                     _videoCapture?.Dispose();
                     _videoCapture = null;
-                    _executionTask?.Wait();
-                    _executionTask = null;
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer

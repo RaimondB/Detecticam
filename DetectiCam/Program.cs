@@ -10,6 +10,7 @@ using System.IO;
 using System.Threading.Tasks;
 using DetectiCam.Core.Detection;
 using DetectiCam.Core.VideoCapturing;
+using DetectiCam.Core.ResultProcessor;
 
 namespace CameraWatcher
 {
@@ -34,10 +35,14 @@ namespace CameraWatcher
                 else
                 {
                     services.AddHttpClient();
+
                     services.AddHostedService<BatchedCameraWatcherService>();
                     services.AddSingleton<IBatchedDnnDetector, Yolo3BatchedDnnDetector>();
-                    services.AddSingleton<MultiStreamBatchedPipeline<DnnDetectedObject[][]>,
-                        MultiStreamBatchedPipeline<DnnDetectedObject[][]>>();
+                    services.AddSingleton<IAsyncSingleResultProcessor, AnnotatedImagePublisher>();
+                    services.AddSingleton<IAsyncSingleResultProcessor, WebhookPublisher>();
+
+                    services.AddSingleton<MultiStreamBatchedProcessorPipeline,
+                        MultiStreamBatchedProcessorPipeline>();
                 }
             })
             .ConfigureLogging(logging =>
@@ -59,14 +64,14 @@ namespace CameraWatcher
                 configPath = Path.GetFullPath(basePathConfig);
                 if (Directory.Exists(configPath))
                 {
-                    Console.WriteLine($"ConfigDir for configuration:{configPath}");
+                    //Console.WriteLine($"ConfigDir for configuration:{configPath}");
                     config.AddJsonFile(Path.GetFullPath("appsettings.json", configPath));
                 }
             }
             if (String.IsNullOrEmpty(configPath))
             {
                 configPath = Directory.GetCurrentDirectory();
-                Console.WriteLine($"ConfigDir not specified, falling back to default location:{configPath}");
+                //Console.WriteLine($"ConfigDir not specified, falling back to default location:{configPath}");
             }
 
             var Dict = new Dictionary<string, string>

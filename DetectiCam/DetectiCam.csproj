@@ -21,9 +21,9 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.5" />
     <PackageReference Include="Microsoft.NetCore.Platforms" Version="3.1.1" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
-    <PackageReference Include="OpenCvSharp4" Version="4.3.0.20200524" />
-    <PackageReference Include="OpenCvSharp4.runtime.ubuntu.18.04-x64" Version="4.3.0.20200524" />
-    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.3.0.20200524" />
+    <PackageReference Include="OpenCvSharp4" Version="4.3.0.20200701" />
+    <PackageReference Include="OpenCvSharp4.runtime.ubuntu.18.04-x64" Version="4.3.0.20200701" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.3.0.20200701" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 
@@ -41,6 +41,16 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="docker-test\config\appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="run_tests.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="docker-test\capture\" />
   </ItemGroup>
   
   <Target Name="RemoveDevelopmentSettingsAfterPublish" AfterTargets="Publish">

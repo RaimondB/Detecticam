@@ -254,4 +254,5 @@ paket-files/
 
 #YoloData
 YoloData
-appsettings.Development.json
+appsettings.Development*.json
+docker-test
