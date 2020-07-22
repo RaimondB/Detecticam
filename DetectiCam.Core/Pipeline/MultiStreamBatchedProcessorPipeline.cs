@@ -36,7 +36,9 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly IConfiguration _configuration;
         private readonly IBatchedDnnDetector _detector;
 
-        public MultiStreamBatchedProcessorPipeline([DisallowNull] ILogger<MultiStreamBatchedPipeline> logger,
+        private TimeSpan _analysisInterval = TimeSpan.FromSeconds(3);
+
+        public MultiStreamBatchedProcessorPipeline([DisallowNull] ILogger<MultiStreamBatchedProcessorPipeline> logger,
                                               [DisallowNull] IConfiguration configuration,
                                               IBatchedDnnDetector detector,
                                               IEnumerable<IAsyncSingleResultProcessor> resultProcessors)
@@ -57,9 +59,6 @@ namespace DetectiCam.Core.VideoCapturing
                 _streamsConfig.Count,
                 String.Join(",", _streamsConfig.Select(s => s.Id)));
         }
-
-
-        private TimeSpan _analysisInterval;
 
         public void TriggerAnalysisOnInterval(TimeSpan interval)
         {
@@ -122,7 +121,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         private void CreateCapturingChannels()
         {
-            _logger.LogInformation("CreateCapturingChannels");
+            _logger.LogDebug("CreateCapturingChannels");
             foreach (var si in _streamsConfig)
             {
                 CreateCapturingChannel(si);
@@ -135,7 +134,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         public Task StartProcessingAll(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Start processing pipeline");
+            _logger.LogInformation("Create processing pipeline");
             CreateCapturingChannels();
             var analysisChannel = CreateMultiFrameChannel();
             var outputChannel = CreateOutputChannel();
@@ -154,6 +153,7 @@ namespace DetectiCam.Core.VideoCapturing
                 outputChannel.Reader, _resultProcessors, _logger);
             var resultPublisherTask = _resultPublisher.ExecuteProcessingAsync(cancellationToken);
 
+            _logger.LogInformation("Start processing pipeline");
             StartCapturingAllStreamsAsync(cancellationToken);
 
             return Task.WhenAll(mergerTask, analyzerTask, resultPublisherTask);

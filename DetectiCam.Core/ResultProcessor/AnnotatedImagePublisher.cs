@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -55,10 +56,13 @@ namespace DetectiCam.Core.ResultProcessor
 
             _logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}. {results.Length} objects detected");
 
-            foreach (var dObj in results)
-            {
-                _logger.LogInformation($"Detected: {dObj.Label} ; prob: {dObj.Probability}");
-            }
+            var labelStats = from r in results
+                              group r by r.Label into g
+                              select $"{g.Key}#{g.Count()}" ;
+
+            var stats = String.Join("; ", labelStats);
+         
+            _logger.LogInformation($"Detected: {stats}");
 
             using var result = Visualizer.AnnotateImage(frame.Image, results.ToArray());
             var filename = $"obj-{GetTimestampedSortable(frame.Metadata)}.jpg";

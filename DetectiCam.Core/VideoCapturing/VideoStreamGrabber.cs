@@ -116,11 +116,11 @@ namespace DetectiCam.Core.VideoCapturing
                 }
                 finally
                 {
+                    // We reach this point by breaking out of the while loop. So we must be stopping.
                     _logger.LogInformation($"Capture has stopped for {this.Info.Id}");
                     writer.TryComplete();
                 }
             }, cancellationToken);
-            // We reach this point by breaking out of the while loop. So we must be stopping.
         }
 
         private async Task StartCaptureAsync(TimeSpan publicationInterval, ChannelWriter<VideoFrame> writer, CancellationToken cancellationToken)

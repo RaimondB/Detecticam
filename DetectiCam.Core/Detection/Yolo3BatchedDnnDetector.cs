@@ -142,12 +142,7 @@ namespace DetectiCam.Core.Detection
                 foreach (var prob in output)
                 {
                     //dimensions will be 2 for single image analysis and 3 for batch analysis
-                    //1 input Prob Dims:2 images: 0 - 300, 1 - 85
                     //2 input Prob Dims:3 images: 0 - 2, 1 - 300, 2 - 85
-                    //bool isBatch = prob.Dims == 3;
-
-                    //int rowDimensionIndex = isBatch? 1 : 0;
-                    //int classDimensionIndex = isBatch? 2 : 1;
 
                     for (var i = 0; i < prob.Size(1); i++)
                     {
@@ -159,7 +154,7 @@ namespace DetectiCam.Core.Detection
                             var colRange = new Range(prefix, prob.Size(2) - 1);
 
                             var maxProbIndex = prob.FindMaxValueIndexInRange<float>(inputIndex, i, colRange);
-                                //GetMaxProbabilityClassIndex(prob, inputIndex, i, colRange);
+
                             if (maxProbIndex == -1)
                             {
                                 continue;
@@ -224,11 +219,6 @@ namespace DetectiCam.Core.Detection
             {
                 //dimensions will be 2 for single image analysis and 3 for batch analysis
                 //1 input Prob Dims:2 images: 0 - 300, 1 - 85
-                //2 input Prob Dims:3 images: 0 - 2, 1 - 300, 2 - 85
-                //bool isBatch = prob.Dims == 3;
-
-                //int rowDimensionIndex = isBatch? 1 : 0;
-                //int classDimensionIndex = isBatch? 2 : 1;
 
                 for (var i = 0; i < prob.Size(0); i++)
                 {
@@ -240,7 +230,7 @@ namespace DetectiCam.Core.Detection
                         var colRange = new Range(prefix, prob.Size(1) - 1);
 
                         var maxProbIndex = prob.FindMaxValueIndexInRange<float>(i, colRange);
-                        //GetMaxProbabilityClassIndex(prob, inputIndex, i, colRange);
+
                         if (maxProbIndex == -1)
                         {
                             continue;
@@ -281,11 +271,11 @@ namespace DetectiCam.Core.Detection
 
             if (!nms)
             {
-                //using non-maximum suppression to reduce overlapping low confidence box
                 indices = Enumerable.Range(0, boxes.Count).ToArray();
             }
             else
             {
+                //using non-maximum suppression to reduce overlapping low confidence box
                 CvDnn.NMSBoxes(boxes, confidences, threshold, nmsThreshold, out indices);
                 _logger.LogDebug($"NMSBoxes drop {confidences.Count - indices.Length} overlapping result.");
             }
@@ -320,7 +310,6 @@ namespace DetectiCam.Core.Detection
                     {
                         nnet.Dispose();
                     }
-
                 }
 
                 disposedValue = true;
