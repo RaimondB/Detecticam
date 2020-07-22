@@ -80,7 +80,7 @@ namespace DetectiCam.Core.VideoCapturing
             _internalCts.Cancel();
             if (_processorTask != null)
             {
-                await _processorTask;
+                await _processorTask.ConfigureAwait(false);
                 _processorTask = null;
             }
         }

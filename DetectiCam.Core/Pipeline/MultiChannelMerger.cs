@@ -14,7 +14,7 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly ChannelWriter<IList<T>> _outputWriter;
         private readonly ILogger _logger;
         private Task? _mergeTask = null;
-        private CancellationTokenSource _internalCts;
+        private readonly CancellationTokenSource _internalCts;
         private bool disposedValue;
 
         public MultiChannelMerger(IEnumerable<ChannelReader<T>> inputReaders, ChannelWriter<IList<T>> outputWriter,
@@ -87,7 +87,7 @@ namespace DetectiCam.Core.VideoCapturing
             _internalCts.Cancel();
             if (_mergeTask != null)
             {
-                await _mergeTask;
+                await _mergeTask.ConfigureAwait(false);
                 _mergeTask = null;
             }
         }

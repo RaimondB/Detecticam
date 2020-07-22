@@ -63,5 +63,10 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
+        public override Task StopProcessingAsync(CancellationToken cancellationToken)
+        {
+            _resultProcessors.ForEach(async p => await p.StopProcessingAsync(cancellationToken).ConfigureAwait(false));
+            return base.StopProcessingAsync(cancellationToken);
+        }
     }
 }

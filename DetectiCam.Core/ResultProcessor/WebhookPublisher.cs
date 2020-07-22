@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DetectiCam.Core.ResultProcessor
@@ -34,9 +35,15 @@ namespace DetectiCam.Core.ResultProcessor
             var url = frame.Metadata.Info.CallbackUrl;
             if (url != null)
             {
+                _logger.LogInformation("Webhook notify for {streamId}", frame.Metadata.Info.Id);
                 using var client = _clientFactory.CreateClient();
                 await client.GetAsync(url).ConfigureAwait(false);
             }
+        }
+
+        public Task StopProcessingAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
         }
     }
 }

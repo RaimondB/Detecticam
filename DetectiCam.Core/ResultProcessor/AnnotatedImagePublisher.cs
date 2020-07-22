@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DetectiCam.Core.ResultProcessor
@@ -70,6 +71,11 @@ namespace DetectiCam.Core.ResultProcessor
             Cv2.ImWrite(filePath, result);
             _logger.LogInformation($"Interesting Detection Saved: {filename}");
 
+            return Task.CompletedTask;
+        }
+
+        public Task StopProcessingAsync(CancellationToken cancellationToken)
+        {
             return Task.CompletedTask;
         }
     }

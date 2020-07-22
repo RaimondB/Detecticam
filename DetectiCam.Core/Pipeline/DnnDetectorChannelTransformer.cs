@@ -16,7 +16,6 @@ namespace DetectiCam.Core.Pipeline
     public class DnnDetectorChannelTransformer : ChannelTransformer<IList<VideoFrame>, AnalysisResult>
     {
         private readonly IBatchedDnnDetector _detector;
-        private readonly TimeSpan _analysisTimeout = TimeSpan.FromSeconds(3);
 
         public DnnDetectorChannelTransformer(IBatchedDnnDetector detector,
             ChannelReader<IList<VideoFrame>> inputReader, ChannelWriter<AnalysisResult> outputWriter,
