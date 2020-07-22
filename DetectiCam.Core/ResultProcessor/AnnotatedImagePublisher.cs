@@ -45,16 +45,13 @@ namespace DetectiCam.Core.ResultProcessor
             return $"{metaData.Timestamp:yyyyMMddTHHmmss}";
         }
 
-
         public Task ProcessResultAsync(VideoFrame frame, DnnDetectedObject[] results)
         {
             //If the output path is not set, skip this processor.
-            if (_captureOutputPath is null) return Task.CompletedTask;
+            if (String.IsNullOrEmpty(_captureOutputPath)) return Task.CompletedTask;
 
             if (frame is null) throw new ArgumentNullException(nameof(frame));
             if (results is null) throw new ArgumentNullException(nameof(results));
-
-            Mat inputImage = frame.Image;
 
             _logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}. {results.Length} objects detected");
 
@@ -63,16 +60,11 @@ namespace DetectiCam.Core.ResultProcessor
                 _logger.LogInformation($"Detected: {dObj.Label} ; prob: {dObj.Probability}");
             }
 
-            if (!String.IsNullOrEmpty(_captureOutputPath))
-            {
-                var info = frame.Metadata.Info;
-
-                using var result = Visualizer.AnnotateImage(frame.Image, results.ToArray());
-                var filename = $"obj-{GetTimestampedSortable(frame.Metadata)}.jpg";
-                var filePath = Path.Combine(_captureOutputPath, filename);
-                Cv2.ImWrite(filePath, result);
-                _logger.LogInformation($"Interesting Detection Saved: {filename}");
-            }
+            using var result = Visualizer.AnnotateImage(frame.Image, results.ToArray());
+            var filename = $"obj-{GetTimestampedSortable(frame.Metadata)}.jpg";
+            var filePath = Path.Combine(_captureOutputPath, filename);
+            Cv2.ImWrite(filePath, result);
+            _logger.LogInformation($"Interesting Detection Saved: {filename}");
 
             return Task.CompletedTask;
         }

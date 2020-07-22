@@ -13,7 +13,7 @@ namespace DetectiCam.Core.VideoCapturing
             Frames = frames;
         }
         public IList<VideoFrame> Frames { get; }
-        public IList<DnnDetectedObject[]> Analysis { get; set; } = default!;
+        public IList<DnnDetectedObject[]>? Analysis { get; set; } = null;
         public bool TimedOut { get; set; } = false;
         public Exception? Exception { get; set; } = null;
     }

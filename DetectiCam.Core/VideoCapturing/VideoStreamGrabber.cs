@@ -98,20 +98,27 @@ namespace DetectiCam.Core.VideoCapturing
             _executionTask = Task.Run(async () =>
             {
                 var writer = this.OutputChannel.Writer;
-                while (!cancellationToken.IsCancellationRequested && !_stopping)
+                try
                 {
-                    try
+                    while (!cancellationToken.IsCancellationRequested && !_stopping)
                     {
-                        await StartCaptureAsync(publicationInterval, writer, cancellationToken).ConfigureAwait(false);
-                    }
+                        try
+                        {
+                            await StartCaptureAsync(publicationInterval, writer, cancellationToken).ConfigureAwait(false);
+                        }
 #pragma warning disable CA1031 // Do not catch general exception types
-                    catch (Exception ex)
+                        catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
-                    {
-                        _logger.LogError(ex, "Exception in processes videostream {name}, restarting", this.StreamName);
+                        {
+                            _logger.LogError(ex, "Exception in processes videostream {name}, restarting", this.StreamName);
+                        }
                     }
                 }
-                writer.Complete();
+                finally
+                {
+                    _logger.LogInformation($"Capture has stopped for {this.Info.Id}");
+                    writer.TryComplete();
+                }
             }, cancellationToken);
             // We reach this point by breaking out of the while loop. So we must be stopping.
         }

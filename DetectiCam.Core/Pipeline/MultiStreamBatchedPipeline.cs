@@ -56,6 +56,7 @@ namespace DetectiCam.Core.VideoCapturing
         private bool _stopping = false;
         private Task? _consumerTask = null;
         private Task? _mergeTask = null;
+        private Task? _resultProcessorTask = null;
 
         private bool disposedValue = false;
         private readonly ILogger _logger;
@@ -100,13 +101,15 @@ namespace DetectiCam.Core.VideoCapturing
                 
                 try
                 {
-                    var task = fcn(frames, cancellationToken);
+                    var task = fcn(frames, timeoutSource.Token);
                     _logger.LogDebug("DoAnalysis: started task {taskId}", task.Id);
                     
                     //if (task == await Task.WhenAny(task, Task.Delay(AnalysisTimeout, source.Token)))
                     if (task == await Task.WhenAny(task, Task.Delay(AnalysisTimeout, timeoutSource.Token)).ConfigureAwait(false))
                     {
                         output.Analysis = await task.ConfigureAwait(false);
+
+                        //Cancel the delay task
                         timeoutSource.Cancel();
                     }
                     else
@@ -203,19 +206,18 @@ namespace DetectiCam.Core.VideoCapturing
         }
 
 
-        public Task MergeChannels<T>(
-            IList<Channel<T>> inputChannels, Channel<IList<T>> outputChannel, CancellationToken cancellationToken)
+        private Task MergeChannels(Channel<IList<VideoFrame>> outputChannel, CancellationToken cancellationToken)
         {
             return Task.Run(async () =>
             {
                 //var timeout = TimeSpan.FromMilliseconds(50);
 
-                var readers = inputChannels.Select(c => c.Reader).ToArray();
+                ChannelReader<VideoFrame>?[] readers = _streams.Select(c => c.OutputChannel.Reader).ToArray();
                 var writer = outputChannel.Writer;
 
                 while (!_stopping && !cancellationToken.IsCancellationRequested)
                 {
-                    List<T> results = new List<T>();
+                    List<VideoFrame> results = new List<VideoFrame>();
 
                     for (var index = 0; index < readers.Length; index++)
                     {
@@ -224,14 +226,14 @@ namespace DetectiCam.Core.VideoCapturing
                             var curReader = readers[index];
                             if (curReader != null)
                             {
-                                var result = await readers[index].ReadAsync(cancellationToken).ConfigureAwait(false);
+                                var result = await curReader.ReadAsync(cancellationToken).ConfigureAwait(false);
                                 results.Add(result);
                             }
                         }
                         catch(ChannelClosedException)
                         {
                             _logger.LogWarning("Channel closed");
-                            //readers[index] = null;
+                            readers[index] = null;
                         }
 #pragma warning disable CA1031 // Do not catch general exception types
                         catch (Exception ex)
@@ -241,11 +243,21 @@ namespace DetectiCam.Core.VideoCapturing
                             //Just continue to next on errors or timeouts
                         }
                     }
-                    if(!writer.TryWrite(results))
+                    if (results.Count > 0)
                     {
-                        _logger.LogWarning("Could not write merged result!");
+                        if (!writer.TryWrite(results))
+                        {
+                            _logger.LogWarning("Could not write merged result!");
+                        }
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
+                _logger.LogInformation("Stopping:completing merge channel!");
+                //Complete the channel since nothing to be read anymore
+                writer.Complete();
             }, cancellationToken);
         }
 
@@ -259,6 +271,7 @@ namespace DetectiCam.Core.VideoCapturing
                 {
                     await ProcessAnalysisResult(result).ConfigureAwait(false);
                 }
+                _logger.LogInformation("Result Processor stopped.");
             });
 
             return resultWriterTask;
@@ -272,26 +285,31 @@ namespace DetectiCam.Core.VideoCapturing
                 _logger.LogError(e.Exception, "Analysis function threw an exception");
             else
             {
+                var resultTasks = new List<Task>();
+
                 for (int index = 0; index < e.Frames.Count; index++)
                 {
                     var frame = e.Frames[index];
-                    var analysis = e.Analysis[index];
-
-                    using Mat inputImage = frame.Image;
-
-                    _logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}.");
-                    if (analysis.Length > 0 && analysis.Any(o => o.Label == "person"))
+                    if (e.Analysis != null)
                     {
-                        _logger.LogInformation($"Person detected for frame acquired at {frame.Metadata.Timestamp}. Sending to result processors");
+                        var analysis = e.Analysis[index];
 
-                        var resultTasks = new List<Task>();
-                        foreach (var processor in _resultProcessors)
+                        using Mat inputImage = frame.Image;
+
+                        _logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}.");
+                        if (analysis.Length > 0 && analysis.Any(o => o.Label == "person"))
                         {
-                            resultTasks.Add(processor.ProcessResultAsync(frame, analysis));
+                            _logger.LogInformation($"Person detected for frame acquired at {frame.Metadata.Timestamp}. Sending to result processors");
+
+                            foreach (var processor in _resultProcessors)
+                            {
+                                resultTasks.Add(processor.ProcessResultAsync(frame, analysis));
+                            }
                         }
-                        await Task.WhenAll(resultTasks).ConfigureAwait(false);
                     }
                 }
+
+                await Task.WhenAll(resultTasks).ConfigureAwait(false);
             }
         }
 
@@ -300,7 +318,8 @@ namespace DetectiCam.Core.VideoCapturing
         {
             CreateCapturingChannels();
             var analysisChannel = CreateMultiFrameChannel();
-            _mergeTask = MergeChannels(_capturingChannels, analysisChannel, cancellationToken);
+
+            _mergeTask = MergeChannels(analysisChannel, cancellationToken);
 
             _logger.LogInformation("Starting Consumer Task");
             _consumerTask = Task.Run(async () =>
@@ -308,13 +327,13 @@ namespace DetectiCam.Core.VideoCapturing
                 var reader = analysisChannel.Reader;
                 var writer = OutputChannel.Writer;
 
-                while (!_stopping && !cancellationToken.IsCancellationRequested)
+                await foreach (var vframes in reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    _logger.LogInformation("Consumer: waiting for next result to arrive");
-
+                //while (!_stopping && !cancellationToken.IsCancellationRequested)
+                //{
                     try
                     {
-                        var vframes = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+                        //var vframes = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
                         var startTime = DateTime.Now;
 
@@ -342,6 +361,11 @@ namespace DetectiCam.Core.VideoCapturing
                             _logger.LogError("Consumer: analysis returned null!");
                         }
                     }
+                    //catch(ChannelClosedException)
+                    //{
+                    //    //Stop since the analysis channel has been closed
+                    //    _stopping = true;
+                    //}
 #pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
@@ -349,16 +373,19 @@ namespace DetectiCam.Core.VideoCapturing
                         _logger.LogError(ex, "Exception in consumertask");
                         //try to continue always
                     }
+
+                    _logger.LogInformation("Consumer: waiting for next result to arrive");
                 }
 
                 _logger.LogInformation("Consumer: stopping");
+                writer.Complete();
             });
 
-            var resultWriterTask = CreateResultProcessorTask(cancellationToken);
+            _resultProcessorTask = CreateResultProcessorTask(cancellationToken);
 
             StartCapturingAllStreamsAsync(cancellationToken);
 
-            return resultWriterTask;
+            return _resultProcessorTask;
         }
 
         /// <summary> Stops capturing and processing video frames. </summary>
@@ -371,7 +398,7 @@ namespace DetectiCam.Core.VideoCapturing
             _logger.LogInformation("Stopping capturing tasks");
             foreach (VideoStreamGrabber vs in _streams)
             {
-                await vs.StopProcessingAsync();
+                await vs.StopProcessingAsync().ConfigureAwait(false);
                 vs.Dispose();
             }
             _streams.Clear();
@@ -380,15 +407,22 @@ namespace DetectiCam.Core.VideoCapturing
             _logger.LogInformation("Stopping consumer task");
             if (_consumerTask != null)
             {
-                await _consumerTask;
+                await _consumerTask.ConfigureAwait(false);
                 _consumerTask = null;
             }
 
             _logger.LogInformation("Stopping merge task");
             if (_mergeTask != null)
             {
-                await _mergeTask;
+                await _mergeTask.ConfigureAwait(false);
                 _mergeTask = null;
+            }
+
+            _logger.LogInformation("Stopping result writer task");
+            if(_resultProcessorTask != null)
+            {
+                await _resultProcessorTask.ConfigureAwait(false);
+                _resultProcessorTask = null;
             }
 
             _stopping = false;

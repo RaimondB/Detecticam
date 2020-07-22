@@ -1,0 +1,10 @@
+version: "3.3"
+services:
+  sut:
+     build:
+        context: ..
+        dockerfile: DetectiCam/Dockerfile
+     volumes:
+       - "./docker-test/capture:/captures"
+       - "./docker-test/config:/config"
+     command: /app/run_tests.sh

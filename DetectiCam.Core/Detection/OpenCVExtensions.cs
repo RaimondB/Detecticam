@@ -26,5 +26,24 @@ namespace DetectiCam.Core.Detection
             }
             return dim2MaxIndex;
         }
+
+        public static int FindMaxValueIndexInRange<T>(this Mat inputMatrix, int dim0Index, Range dim1Range) where T : unmanaged, IComparable<T>
+        {
+            if (inputMatrix is null) throw new ArgumentNullException(nameof(inputMatrix));
+
+            int dim1MaxIndex = -1;
+            T dim1MaxValue = default;
+
+            for (int dim1Index = dim1Range.Start; dim1Index <= dim1Range.End; dim1Index++)
+            {
+                var curValue = inputMatrix.At<T>(dim0Index, dim1Index);
+                if (curValue.CompareTo(dim1MaxValue) > 0)
+                {
+                    dim1MaxIndex = dim1Index;
+                    dim1MaxValue = curValue;
+                }
+            }
+            return dim1MaxIndex;
+        }
     }
 }

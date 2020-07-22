@@ -41,8 +41,8 @@ namespace CameraWatcher
                     services.AddSingleton<IAsyncSingleResultProcessor, AnnotatedImagePublisher>();
                     services.AddSingleton<IAsyncSingleResultProcessor, WebhookPublisher>();
 
-                    services.AddSingleton<MultiStreamBatchedPipeline,
-                        MultiStreamBatchedPipeline>();
+                    services.AddSingleton<MultiStreamBatchedProcessorPipeline,
+                        MultiStreamBatchedProcessorPipeline>();
                 }
             })
             .ConfigureLogging(logging =>

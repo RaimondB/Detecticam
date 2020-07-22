@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DetectiCam", "DetectiCam\De
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DetectiCam.Core", "DetectiCam.Core\DetectiCam.Core.csproj", "{D8587B25-B279-44DD-BBA6-50B3AB51DCD7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DetectiCam.CoreTests", "DetectiCam.CoreTests\DetectiCam.CoreTests.csproj", "{053C8D88-B3DF-41D2-8CE8-3ED030BDC113}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{D8587B25-B279-44DD-BBA6-50B3AB51DCD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D8587B25-B279-44DD-BBA6-50B3AB51DCD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D8587B25-B279-44DD-BBA6-50B3AB51DCD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{053C8D88-B3DF-41D2-8CE8-3ED030BDC113}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{053C8D88-B3DF-41D2-8CE8-3ED030BDC113}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{053C8D88-B3DF-41D2-8CE8-3ED030BDC113}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{053C8D88-B3DF-41D2-8CE8-3ED030BDC113}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

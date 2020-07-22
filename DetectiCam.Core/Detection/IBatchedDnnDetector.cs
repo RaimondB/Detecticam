@@ -8,6 +8,7 @@ namespace DetectiCam.Core.Detection
 {
     public interface IBatchedDnnDetector : IDisposable
     {
-        public Task<DnnDetectedObject[][]> ClassifyObjects(IEnumerable<Mat> image, CancellationToken cancellationToken);
+        public DnnDetectedObject[][] ClassifyObjects(IEnumerable<Mat> image);
+        public void Initialize();
     }
 }
