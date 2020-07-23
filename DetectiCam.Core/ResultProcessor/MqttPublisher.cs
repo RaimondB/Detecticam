@@ -84,8 +84,8 @@ namespace DetectiCam.Core.ResultProcessor
                 if (frame is null) throw new ArgumentNullException(nameof(frame));
                 if (results is null) throw new ArgumentNullException(nameof(results));
 
-                string strValue = "{ \"dectection\" : true }";
-                string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/";
+                string strValue = "{ \"detection\" : true }";
+                string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/state";
 
                 // publish a message on "/home/temperature" topic with QoS 2 
                 _client.Publish(topic,

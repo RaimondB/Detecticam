@@ -59,7 +59,7 @@ namespace DetectiCam.Core.VideoCapturing
                         }
                     }
                 }
-                catch (OperationCanceledException oc)
+                catch (OperationCanceledException)
                 {
                     _logger.LogWarning("Transform operation cancelled");
                     throw;
@@ -75,7 +75,7 @@ namespace DetectiCam.Core.VideoCapturing
             return _processorTask;
         }
 
-        public async Task StopProcessingAsync(CancellationToken cancellationToken)
+        public async Task StopProcessingAsync()
         {
             _internalCts.Cancel();
             if (_processorTask != null)

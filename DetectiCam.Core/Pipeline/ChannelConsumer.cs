@@ -52,7 +52,7 @@ namespace DetectiCam.Core.VideoCapturing
                         await _processor(inputValue, linkedToken).ConfigureAwait(false);
                     }
                 }
-                catch (OperationCanceledException oc)
+                catch (OperationCanceledException)
                 {
                     _logger.LogWarning("Consume operation cancelled");
                     throw;

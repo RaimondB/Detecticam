@@ -82,7 +82,7 @@ namespace DetectiCam.Core.VideoCapturing
             return _mergeTask;
         }
 
-        public async Task StopProcessingAsync(CancellationToken cancellationToken)
+        public async Task StopProcessingAsync()
         {
             _internalCts.Cancel();
             if (_mergeTask != null)

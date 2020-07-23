@@ -106,7 +106,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
                 _secondInput.Writer.Complete();
             });
 
-            await _sut.StopProcessingAsync(_cts.Token);
+            await _sut.StopProcessingAsync();
 
             if(_output.Reader.TryRead(out var result))
             {

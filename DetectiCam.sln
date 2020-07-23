@@ -6,14 +6,13 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{94B75B7B-7D23-4CE7-AD2C-F8D3FF0AB214}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
-		..\opencv\install-opencv-linux.sh = ..\opencv\install-opencv-linux.sh
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DetectiCam", "DetectiCam\DetectiCam.csproj", "{0E48618E-4A37-4C68-B8A2-4E8B0A9A2116}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DetectiCam.Core", "DetectiCam.Core\DetectiCam.Core.csproj", "{D8587B25-B279-44DD-BBA6-50B3AB51DCD7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DetectiCam.CoreTests", "DetectiCam.CoreTests\DetectiCam.CoreTests.csproj", "{053C8D88-B3DF-41D2-8CE8-3ED030BDC113}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DetectiCam.CoreTests", "DetectiCam.CoreTests\DetectiCam.CoreTests.csproj", "{053C8D88-B3DF-41D2-8CE8-3ED030BDC113}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
