@@ -1,7 +1,7 @@
 FROM raimondb/opencv-dotnet-runtime-deps AS base
 COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"] 
 
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1.301-bionic AS build
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1-bionic AS build
 WORKDIR /src
 COPY ["DetectiCam/DetectiCam.csproj", "DetectiCam/"]
 COPY ["DetectiCam.Core/DetectiCam.Core.csproj", "DetectiCam.Core/"]
