@@ -6,5 +6,4 @@ namespace DetectiCam.Core.VideoCapturing
     {
         public const string VideoStreamsConfigKey = "video-streams";
     }
-
 }
