@@ -175,7 +175,7 @@ namespace DetectiCam.Core.VideoCapturing
             _logger.LogInformation("Stopping merger");
             if (_merger != null)
             {
-                await _merger.StopProcessingAsync(default).ConfigureAwait(false);
+                await _merger.StopProcessingAsync().ConfigureAwait(false);
                 _merger.Dispose();
                 _merger = null;
             }
@@ -183,7 +183,7 @@ namespace DetectiCam.Core.VideoCapturing
             _logger.LogInformation("Stopping analyzer");
             if (_analyzer != null)
             {
-                await _analyzer.StopProcessingAsync(default).ConfigureAwait(false);
+                await _analyzer.StopProcessingAsync().ConfigureAwait(false);
                 _analyzer.Dispose();
                 _analyzer = null;
             }

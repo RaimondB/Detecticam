@@ -69,9 +69,53 @@ Only the id and path are required. A path can be a videostream file (need to be 
 * *fps*: Optional, only needed if the log shows that the settings cannot be picked up from the stream. If nothing can be found, and not specified, defaults to 30.
 * *callbackUr*l: Optional, webhook to trigger on detection
 
-### Captures or Callback
+## Act on detections
+
+### Capturing Detections to disk
 By default, all captured images containing a "person" are written to the /captures volume, including bounding boxes of all detected objects and their confidence percentage.
-When you want to integrate with other solutions, you can specifiy a callback url. In the example I am using a webhook to trigger recording on my synology NAS.
+If you dont want this, you can make the capturepath empty in the appsettings.json:
+
+```
+"capture-path": null,
+```
+
+### Webhook Notification
+When you want to integrate with other solutions by using a webhook, you can specifiy a callback url. As part of the video-steam config. 
+In the example I am using a webhook to trigger recording on my synology NAS.
+
+### MQTT Publications
+Another option is to use MQTT publication. The following configuration can be used in the appsettings.json:
+```
+"mqtt-publisher": {
+   "enabled": true,
+   "server": "nuc.home",
+   "port": 1883,
+    "username": "myuser",
+    "password": "passwd",
+     "topicPrefix": "home",
+     "clientId": "detecticam"
+ }
+```
+* *enabled*: Mandatory to enable it, by default is set to false.
+* *server*: Mandatory, Mqtt server to use
+* *port*: Optional, default set to 1883.
+* *username*: Optional, default null.
+* *password*: Optional, default null.
+* *topicPrefix*: Optional, default ""
+* *clientId*: Optional, by default a unique id (guid) is generated
+
+Currently only an unsecure connection is supported, so we don't have to configure certificates etc.
+
+A message will be published each time a person is detected.
+The message is published on the topic:
+```
+[<topicPrefix>/]detect-i-cam/<stream-id>/state
+```
+
+The value of the message is currently only:
+```
+{ "detection" : true }
+```
 
 ### Rolling your own network
 

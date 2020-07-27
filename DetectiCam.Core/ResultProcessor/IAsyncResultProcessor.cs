@@ -4,6 +4,7 @@ using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DetectiCam.Core.ResultProcessor
@@ -11,5 +12,6 @@ namespace DetectiCam.Core.ResultProcessor
     public interface IAsyncSingleResultProcessor
     {
         Task ProcessResultAsync(VideoFrame frame, DnnDetectedObject[] results);
+        Task StopProcessingAsync(CancellationToken cancellationToken);
     }
 }

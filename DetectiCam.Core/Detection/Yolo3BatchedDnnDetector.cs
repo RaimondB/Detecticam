@@ -74,11 +74,13 @@ namespace DetectiCam.Core.Detection
         {
             _logger.LogInformation("Start Detector initalize");
             using Mat dummy1 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0,0,255));
-            //using Mat dummy2 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
+            using Mat dummy2 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
 
-            var images = new List<Mat>();
-            images.Add(dummy1);
-            //images.Add(dummy2);
+            var images = new List<Mat>
+            {
+                dummy1,
+                dummy2
+            };
             var res = ClassifyObjects(images);
             _logger.LogInformation("Detector initalized");
         }

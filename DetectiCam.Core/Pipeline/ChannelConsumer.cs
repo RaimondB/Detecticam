@@ -52,7 +52,7 @@ namespace DetectiCam.Core.VideoCapturing
                         await _processor(inputValue, linkedToken).ConfigureAwait(false);
                     }
                 }
-                catch (OperationCanceledException oc)
+                catch (OperationCanceledException)
                 {
                     _logger.LogWarning("Consume operation cancelled");
                     throw;
@@ -66,12 +66,12 @@ namespace DetectiCam.Core.VideoCapturing
             return _processorTask;
         }
 
-        public async Task StopProcessingAsync(CancellationToken cancellationToken)
+        public virtual async Task StopProcessingAsync(CancellationToken cancellationToken)
         {
             _internalCts.Cancel();
             if (_processorTask != null)
             {
-                await _processorTask;
+                await _processorTask.ConfigureAwait(false);
                 _processorTask = null;
             }
         }

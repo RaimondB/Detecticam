@@ -37,11 +37,6 @@ namespace DetectiCam.Core.VideoCapturing
         public VideoStreamInfo Info { get; }
         public Channel<VideoFrame> OutputChannel { get; }
 
-        //public VideoStreamGrabber(ILogger logger, string streamName, string path, double fps = 0, bool isContinuous = true, RotateFlags? rotateFlags = null)
-        //    : this(logger, new VideoStreamInfo() { Id = streamName, Path = path, Fps = fps, IsContinuous = isContinuous, RotateFlags = rotateFlags })
-        //{
-        //}
-
         public VideoStreamGrabber(ILogger logger, VideoStreamInfo streamInfo, Channel<VideoFrame> outputChannel)
         {
             if (logger is null) throw new ArgumentNullException(nameof(logger));

@@ -38,9 +38,11 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             //or use this short equivalent 
             _logger = Mock.Of<ILogger<MultiChannelMerger<int>>>();
 
-            _inputs = new List<ChannelReader<int>>();
-            _inputs.Add(_firstInput.Reader);
-            _inputs.Add(_secondInput.Reader);
+            _inputs = new List<ChannelReader<int>>
+            {
+                _firstInput.Reader,
+                _secondInput.Reader
+            };
 
             _sut = new MultiChannelMerger<int>(_inputs, _output.Writer, _logger);
         }
@@ -104,7 +106,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
                 _secondInput.Writer.Complete();
             });
 
-            await _sut.StopProcessingAsync(_cts.Token);
+            await _sut.StopProcessingAsync();
 
             if(_output.Reader.TryRead(out var result))
             {
