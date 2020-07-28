@@ -5,7 +5,7 @@
         public const string CapturePublisher = "capture-publisher";
 
         public bool Enabled { get; set; } = true;
-        public string CaptureRootDir { get; set; } = "/capture";
+        public string CaptureRootDir { get; set; } = "/captures";
         public string CapturePattern { get; set; } = "obj-{ts}.jpg";
     }
 }
