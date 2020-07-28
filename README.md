@@ -73,10 +73,27 @@ Only the id and path are required. A path can be a videostream file (need to be 
 
 ### Capturing Detections to disk
 By default, all captured images containing a "person" are written to the /captures volume, including bounding boxes of all detected objects and their confidence percentage.
-If you dont want this, you can make the capturepath empty in the appsettings.json:
+This can be configured by the following settings in the appsettings.json:
 
 ```
-"capture-path": null,
+"capture-publisher": {
+    "enabled": true,
+    "captureRootDir" : "./captures",
+    "capturePattern" : "{yyyy-MM-dd}/{vsid}-{ts}.jpg"
+}
+```
+it is now possible to configure the way the captures will be saved.
+There are two special tokens:
+
+* *{vsid}* is the id of the videostream
+* *{ts}* is the sortable timestamp
+
+Additionally, you can provide [all normal timestamp formatters](https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) between {} . This way it is also now possible to dynamically generate subdirectories so that it is easy to group files by date.
+
+The previous setting for this as shown below is now deprecated and will be removed in a future release.
+
+```
+"capture-path": "./captures",
 ```
 
 ### Webhook Notification

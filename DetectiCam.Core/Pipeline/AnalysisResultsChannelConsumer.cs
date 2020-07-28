@@ -59,7 +59,14 @@ namespace DetectiCam.Core.VideoCapturing
                     }
                 }
 
-                await Task.WhenAll(resultTasks).ConfigureAwait(false);
+                try
+                {
+                    await Task.WhenAll(resultTasks).ConfigureAwait(false);
+                }
+                catch(AggregateException ex)
+                {
+                    Logger.LogError(ex, "Exceptions during publication of detection reaults");
+                }
             }
         }
 

@@ -30,6 +30,10 @@ namespace CameraWatcher
                 services.AddOptions<MqttPublisherOptions>()
                     .Bind(hostContext.Configuration.GetSection(MqttPublisherOptions.MqttPublisher))
                     .ValidateDataAnnotations();
+                services.AddOptions<CapturePublisherOptions>()
+                    .Bind(hostContext.Configuration.GetSection(CapturePublisherOptions.CapturePublisher))
+                    .ValidateDataAnnotations();
+
 
                 var generateConfig = hostContext.Configuration.GetValue<bool>("gen-config");
                 if (generateConfig)
@@ -42,7 +46,7 @@ namespace CameraWatcher
 
                     services.AddHostedService<BatchedCameraWatcherService>();
                     services.AddSingleton<IBatchedDnnDetector, Yolo3BatchedDnnDetector>();
-                    services.AddSingleton<IAsyncSingleResultProcessor, AnnotatedImagePublisher>();
+                    services.AddSingleton<IAsyncSingleResultProcessor, CapturePublisher>();
                     services.AddSingleton<IAsyncSingleResultProcessor, WebhookPublisher>();
                     services.AddSingleton<IAsyncSingleResultProcessor, MqttPublisher>();
 

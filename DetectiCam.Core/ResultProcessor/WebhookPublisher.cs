@@ -20,7 +20,7 @@ namespace DetectiCam.Core.ResultProcessor
         private readonly ILogger _logger;
         private readonly IHttpClientFactory _clientFactory;
 
-        public WebhookPublisher(ILogger<AnnotatedImagePublisher> logger,
+        public WebhookPublisher(ILogger<WebhookPublisher> logger,
                                 IHttpClientFactory clientFactory)
         {
             _logger = logger;
