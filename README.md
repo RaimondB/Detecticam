@@ -78,7 +78,7 @@ This can be configured by the following settings in the appsettings.json:
 ```
 "capture-publisher": {
     "enabled": true,
-    "captureRootDir" : "./captures",
+    "captureRootDir" : "/captures",
     "capturePattern" : "{yyyy-MM-dd}/{vsid}-{ts}.jpg"
 }
 ```

@@ -6,6 +6,6 @@
 
         public bool Enabled { get; set; } = true;
         public string CaptureRootDir { get; set; } = "/captures";
-        public string CapturePattern { get; set; } = "obj-{ts}.jpg";
+        public string CapturePattern { get; set; } = "{vsid}-{ts}.jpg";
     }
 }
