@@ -117,10 +117,15 @@ namespace DetectiCam.Core.ResultProcessor
             EnsureDirectoryPath(filePath);
 
             using var result = Visualizer.AnnotateImage(frame.Image, results.ToArray());
-           
-            Cv2.ImWrite(filePath, result);
-            _logger.LogInformation($"Interesting Detection Saved: {filename}");
 
+            if (Cv2.ImWrite(filePath, result))
+            {
+                _logger.LogInformation("Interesting Detection Saved: {filename}", filename);
+            }
+            else
+            {
+                _logger.LogError("Error during write of file {filePath}", filePath);
+            }
             return Task.CompletedTask;
         }
 
