@@ -35,13 +35,14 @@ namespace DetectiCam.Core.VideoCapturing
             {
                 try
                 {
-                    //using var cts = CancellationTokenSource.CreateLinkedTokenSource(
-                    //    _internalCts.Token, stoppingToken);
-                    //var linkedToken = cts.Token;
+                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(
+                        _internalCts.Token, stoppingToken);
+                    var linkedToken = cts.Token;
 
                     while (true)
                     {
-                        stoppingToken.ThrowIfCancellationRequested();
+
+                        linkedToken.ThrowIfCancellationRequested();
                         T[] results = new T[_inputReaders.Count];
 
                         _logger.LogDebug("Merging frames start batch");
@@ -54,12 +55,7 @@ namespace DetectiCam.Core.VideoCapturing
                             {
                                 try
                                 {
-                                    maxToken = await ReadInputAtIndex(results, index, maxToken).ConfigureAwait(false);
-                                }
-                                catch (OperationCanceledException)
-                                {
-                                    //Operation has timed out
-                                    _logger.LogWarning("Reading from source has timed out");
+                                    maxToken = await ReadInputAtIndex(results, index, maxToken, linkedToken).ConfigureAwait(false);
                                 }
                                 catch (ChannelClosedException)
                                 {
@@ -68,11 +64,6 @@ namespace DetectiCam.Core.VideoCapturing
                                 }
                             }
                         }
-                        //// Find highest Id and check the streams are in sync
-                        //var (maxTokenIndex, maxToken, inSync) = GetMaxSyncToken(results);
-
-                        //// If not insync Re-read lower indexes until matching highest
-
 
                         _logger.LogDebug("Merging frames end batch");
 
@@ -109,7 +100,7 @@ namespace DetectiCam.Core.VideoCapturing
             return _mergeTask;
         }
 
-        private async Task<int?> ReadInputAtIndex(IList<T> results, int index, int? maxToken)
+        private async Task<int?> ReadInputAtIndex(IList<T> results, int index, int? maxToken, CancellationToken cancellationToken)
         {
             var curResult = results[index];
 
@@ -125,7 +116,7 @@ namespace DetectiCam.Core.VideoCapturing
                     //Read results until in sync
                     do
                     {
-                        curResult = await curReader.ReadAsync(_internalCts.Token).ConfigureAwait(false);
+                        curResult = await curReader.ReadAsync(cancellationToken).ConfigureAwait(false);
                         results[index] = curResult;
                     } while (curResult.SyncToken < maxToken);
                     return curResult.SyncToken;
@@ -134,33 +125,6 @@ namespace DetectiCam.Core.VideoCapturing
                 {
                     return null;
                 }
-            }
-        }
-
-        private static  (int? index, int? token, bool inSync) GetMaxSyncToken(List<T> results)
-        {
-            if (results.Count >= 2)
-            {
-                int? maxToken = results[0].SyncToken;
-                int? maxTokenIndex = 0;
-                bool inSync = true;
-
-                for (int index = 1; index < results.Count; index++)
-                {
-                    var curToken = results[index].SyncToken;
-                    if (curToken.HasValue && curToken > maxToken)
-                    {
-                        maxToken = curToken;
-                        maxTokenIndex = index;
-                        inSync = false;
-                    }
-                }
-                return (maxTokenIndex, maxToken, inSync);
-            }
-            else
-            {
-                //A single results is always in sync ;-)
-                return (0, results[0].SyncToken, true);
             }
         }
 

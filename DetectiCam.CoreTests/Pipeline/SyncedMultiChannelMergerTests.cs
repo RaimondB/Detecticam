@@ -141,22 +141,43 @@ namespace DetectiCam.Core.VideoCapturing.Tests
         {
             var task = _sut.ExecuteProcessingAsync(_cts.Token);
 
-            int triggerId = 0;
+            await WriteSequenceAsync(_firstInput, new int[] { 1, 2, 3, 4, 5 }, new int[] { 1, 2, 3, 4, 5 });
+            await WriteSequenceAsync(_secondInput, new int[] { 2, 3, 4, 5 }, new int[] { 4, 3, 2, 1 });
 
-            for (int x = 1; x <= 5; x++)
-            {
-                triggerId++;
-                await _firstInput.Writer.WriteAsync(new SyncItem() { TriggerId = triggerId, Value = x });
-            }
-            _firstInput.Writer.Complete();
+            //Expected:
+            //- first result of first stream is dropped to get into sync.
+            //- four results will come out that are in sync
 
-            triggerId = 1;
-            for (int y = 4; y >= 1; y--)
+            int resultCount = 0;
+            await foreach (var result in _output.Reader.ReadAllAsync(_cts.Token))
             {
-                triggerId++;
-                await _secondInput.Writer.WriteAsync(new SyncItem() { TriggerId = triggerId, Value = y });
+                Assert.AreEqual(2, result.Count);
+                Assert.AreEqual(6, result.Select(x => x.Value).Sum());
+                resultCount++;
             }
-            _secondInput.Writer.Complete();
+
+            await task;
+            Assert.AreEqual(4, resultCount);
+        }
+
+        private static async Task WriteSequenceAsync(ChannelWriter<SyncItem> input, int[] triggerIds, int[] values)
+        {
+            if (triggerIds.Length != values.Length) throw new ArgumentException("number of triggerIds and values must be equal");
+
+            for(int i = 0; i < triggerIds.Length; i++)
+            {
+                await input.WriteAsync(new SyncItem() { TriggerId = triggerIds[i], Value = values[i] });
+            }
+            input.Complete();
+        }
+
+        [TestMethod()]
+        public async Task OutOfSync_MiddleGap_ProcessingTest()
+        {
+            var task = _sut.ExecuteProcessingAsync(_cts.Token);
+
+            await WriteSequenceAsync(_firstInput, new int[] { 1, 2, 4, 5 }, new int[] { 1, 2, 4, 5 });
+            await WriteSequenceAsync(_secondInput, new int[] { 1, 2, 3, 4, 5 }, new int[] { 5, 4, 3, 2, 1 });
 
             //Expected:
             //- first result of first stream is dropped to get into sync.

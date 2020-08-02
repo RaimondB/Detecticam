@@ -112,8 +112,14 @@ namespace DetectiCam.Core.VideoCapturing
             return _videoCapture;
         }
 
+        //private Timer? _timer = null;
+        //private SemaphoreSlim _timerMutex = new SemaphoreSlim(1);
+        //private AutoResetEvent _frameGrabTimer = new AutoResetEvent(false);
+
         public void StartCapturing(TimeSpan publicationInterval, CancellationToken cancellationToken)
         {
+            //_frameGrabTimer.Reset();
+
             _executionTask = Task.Run(() =>
             {
                 try
@@ -139,6 +145,33 @@ namespace DetectiCam.Core.VideoCapturing
                     _outputWriter.TryComplete();
                 }
             }, cancellationToken);
+
+            //int timerIterations = 0;
+
+            //// Set up a timer object that will trigger the frame-grab at a regular interval.
+            //_timer = new Timer(async s /* state */ =>
+            //{
+            //    await _timerMutex.WaitAsync();
+            //    try
+            //    {
+            //        // If the handle was not reset by the producer, then the frame-grab was missed.
+            //        bool missed = _frameGrabTimer.WaitOne(0);
+
+            //        _frameGrabTimer.Set();
+
+            //        if (missed)
+            //        {
+            //            //_logger.LogWarning("Timer: missed frame-grab {0}", timerIterations - 1);
+            //        }
+            //        LogTrace("Timer: grab frame num {0}", timerIterations);
+            //        ++timerIterations;
+            //    }
+            //    finally
+            //    {
+            //        _timerMutex.Release();
+            //    }
+            //}, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(1000.0 / 30.0));
+
         }
 
         private int _frameCount = 0;
@@ -149,6 +182,7 @@ namespace DetectiCam.Core.VideoCapturing
         private void StartCapture(TimeSpan publicationInterval, CancellationToken cancellationToken)
         {
             using var reader = this.InitCapture();
+
             var width = reader.FrameWidth;
             var height = reader.FrameHeight;
             int delayMs = (int)(500.0 / this.Fps);
@@ -156,6 +190,7 @@ namespace DetectiCam.Core.VideoCapturing
 
             while (!cancellationToken.IsCancellationRequested && !_stopping)
             {
+                //_frameGrabTimer.WaitOne(0);
                 _frameCount++;
 
                 Mat imageBuffer = (_frameCount % 2 == 0)? _image1: _image2;
@@ -252,6 +287,7 @@ namespace DetectiCam.Core.VideoCapturing
                 if (disposing)
                 {
                     _stopping = true;
+                    //_frameGrabTimer.Set();
                     StopProcessingAsync()?.Wait(2000);
                     _videoCapture?.Dispose();
                     _videoCapture = null;

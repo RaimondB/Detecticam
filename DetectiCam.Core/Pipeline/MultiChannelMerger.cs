@@ -34,13 +34,13 @@ namespace DetectiCam.Core.VideoCapturing
             {
                 try
                 {
-                    //using var cts = CancellationTokenSource.CreateLinkedTokenSource(
-                    //    _internalCts.Token, stoppingToken);
-                    //var linkedToken = cts.Token;
+                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(
+                        _internalCts.Token, stoppingToken);
+                    var linkedToken = cts.Token;
 
                     while (true)
                     {
-                        stoppingToken.ThrowIfCancellationRequested();
+                        linkedToken.ThrowIfCancellationRequested();
                         List<T> results = new List<T>();
 
                         _logger.LogDebug("Merging frames start batch");
@@ -52,7 +52,7 @@ namespace DetectiCam.Core.VideoCapturing
                                 var curReader = _inputReaders[index];
                                 if (curReader != null)
                                 {
-                                    var result = await curReader.ReadAsync(_internalCts.Token).ConfigureAwait(false);
+                                    var result = await curReader.ReadAsync(linkedToken).ConfigureAwait(false);
                                     results.Add(result);
                                 }
                             }
