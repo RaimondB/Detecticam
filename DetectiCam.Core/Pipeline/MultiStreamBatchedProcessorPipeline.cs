@@ -37,6 +37,7 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly IBatchedDnnDetector _detector;
 
         private TimeSpan _analysisInterval = TimeSpan.FromSeconds(3);
+        private PeriodicTrigger? _trigger;
 
         public MultiStreamBatchedProcessorPipeline([DisallowNull] ILogger<MultiStreamBatchedProcessorPipeline> logger,
                                               [DisallowNull] IConfiguration configuration,
@@ -67,20 +68,20 @@ namespace DetectiCam.Core.VideoCapturing
 
         private static Channel<VideoFrame> CreateCapturingChannel() =>
             Channel.CreateBounded<VideoFrame>(
-                new BoundedChannelOptions(2)
+                new BoundedChannelOptions(5)
                 {
                     AllowSynchronousContinuations = false,
-                    FullMode = BoundedChannelFullMode.DropNewest,
+                    FullMode = BoundedChannelFullMode.DropOldest,
                     SingleReader = true,
                     SingleWriter = true
                 });
 
         private static Channel<IList<VideoFrame>> CreateMultiFrameChannel() =>
             Channel.CreateBounded<IList<VideoFrame>>(
-            new BoundedChannelOptions(2)
+            new BoundedChannelOptions(1)
             {
                 AllowSynchronousContinuations = false,
-                FullMode = BoundedChannelFullMode.DropNewest,
+                FullMode = BoundedChannelFullMode.DropOldest,
                 SingleReader = true,
                 SingleWriter = true
             });
@@ -128,7 +129,7 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
-        private MultiChannelMerger<VideoFrame>? _merger;
+        private SyncedMultiChannelMerger<VideoFrame>? _merger;
         private DnnDetectorChannelTransformer? _analyzer;
         private AnalysisResultsChannelConsumer? _resultPublisher;
 
@@ -141,7 +142,7 @@ namespace DetectiCam.Core.VideoCapturing
 
             var inputReaders = _capturingChannels.Select(c => c.Reader).ToList();
 
-            _merger = new MultiChannelMerger<VideoFrame>(
+            _merger = new SyncedMultiChannelMerger<VideoFrame>(
                 inputReaders, analysisChannel.Writer, _logger);
             var mergerTask = _merger.ExecuteProcessingAsync(cancellationToken);
 
@@ -155,6 +156,9 @@ namespace DetectiCam.Core.VideoCapturing
 
             _logger.LogInformation("Start processing pipeline");
             StartCapturingAllStreamsAsync(cancellationToken);
+
+            _trigger = new PeriodicTrigger(_logger, _streams);
+            _trigger.Start(TimeSpan.FromSeconds(_streams.Count), _analysisInterval);
 
             return Task.WhenAll(mergerTask, analyzerTask, resultPublisherTask);
         }
@@ -203,6 +207,7 @@ namespace DetectiCam.Core.VideoCapturing
             {
                 if (disposing)
                 {
+                    _trigger?.Dispose();
                     foreach (VideoStreamGrabber vs in _streams)
                     {
                         vs?.Dispose();

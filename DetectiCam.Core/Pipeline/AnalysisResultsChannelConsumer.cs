@@ -46,7 +46,7 @@ namespace DetectiCam.Core.VideoCapturing
 
                         using Mat inputImage = frame.Image;
 
-                        Logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}.");
+                        Logger.LogInformation($"New result received for {frame.Metadata.Info.Id} frame acquired at {frame.Metadata.Timestamp}.");
                         if (analysis.Length > 0 && analysis.Any(o => o.Label == "person"))
                         {
                             Logger.LogInformation($"Person detected for frame acquired at {frame.Metadata.Timestamp}. Sending to result processors");

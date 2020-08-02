@@ -147,11 +147,6 @@ namespace DetectiCam.Core.ResultProcessor
 
             Regex patternMatcher = new Regex(@"(\{.+\})");
 
-            foreach(var m in patternMatcher.Matches(filePattern))
-            {
-                int a = 1;
-            }
-
             var result = patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{','}'), CultureInfo.InvariantCulture));
 
             return result;
