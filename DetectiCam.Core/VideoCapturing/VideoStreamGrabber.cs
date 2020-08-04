@@ -1,7 +1,9 @@
-﻿//#define TRACE_GRABBER
+﻿#define TRACE_GRABBER
 #nullable enable
 
+using DetectiCam.Core.Pipeline;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using OpenCvSharp;
 using System;
 using System.Diagnostics;
@@ -14,7 +16,7 @@ using System.Threading.Tasks;
 namespace DetectiCam.Core.VideoCapturing
 {
 
-    public class VideoStreamGrabber : IDisposable
+    public class VideoStreamGrabber : IDisposable, ITimestampTrigger
     {
         public string Path { get; }
 
@@ -37,10 +39,25 @@ namespace DetectiCam.Core.VideoCapturing
         public VideoStreamInfo Info { get; }
         public Channel<VideoFrame> OutputChannel { get; }
 
+        private ChannelWriter<VideoFrame> _outputWriter;
+
+
+        private Channel<VideoFrame> _frameBufferChannel = Channel.CreateBounded<VideoFrame>(
+            new BoundedChannelOptions(1)
+            {
+                FullMode = BoundedChannelFullMode.DropOldest,
+                AllowSynchronousContinuations = true,
+                SingleReader = true,
+                SingleWriter = true
+            });
+        private ChannelReader<VideoFrame> _frameBufferReader;
+        private ChannelWriter<VideoFrame> _frameBufferWriter;
+
         public VideoStreamGrabber(ILogger logger, VideoStreamInfo streamInfo, Channel<VideoFrame> outputChannel)
         {
             if (logger is null) throw new ArgumentNullException(nameof(logger));
             if (streamInfo is null) throw new ArgumentNullException(nameof(streamInfo));
+            if (outputChannel is null) throw new ArgumentNullException(nameof(outputChannel));
 
             Info = streamInfo;
             Path = streamInfo.Path;
@@ -49,10 +66,17 @@ namespace DetectiCam.Core.VideoCapturing
             IsContinuous = streamInfo.IsContinuous;
             RotateFlags = streamInfo.RotateFlags;
             OutputChannel = outputChannel;
+            _outputWriter = outputChannel.Writer;
+
+            _frameBufferReader = _frameBufferChannel.Reader;
+            _frameBufferWriter = _frameBufferChannel.Writer;
+
 
             _stopping = false;
             _logger = logger;
         }
+
+
 
         [Conditional("TRACE_GRABBER")]
         private void LogTrace(string format, params object[] args)
@@ -88,18 +112,23 @@ namespace DetectiCam.Core.VideoCapturing
             return _videoCapture;
         }
 
+        //private Timer? _timer = null;
+        //private SemaphoreSlim _timerMutex = new SemaphoreSlim(1);
+        //private AutoResetEvent _frameGrabTimer = new AutoResetEvent(false);
+
         public void StartCapturing(TimeSpan publicationInterval, CancellationToken cancellationToken)
         {
-            _executionTask = Task.Run(async () =>
+            //_frameGrabTimer.Reset();
+
+            _executionTask = Task.Run(() =>
             {
-                var writer = this.OutputChannel.Writer;
                 try
                 {
                     while (!cancellationToken.IsCancellationRequested && !_stopping)
                     {
                         try
                         {
-                            await StartCaptureAsync(publicationInterval, writer, cancellationToken).ConfigureAwait(false);
+                            StartCapture(publicationInterval, cancellationToken);
                         }
 #pragma warning disable CA1031 // Do not catch general exception types
                         catch (Exception ex)
@@ -113,37 +142,78 @@ namespace DetectiCam.Core.VideoCapturing
                 {
                     // We reach this point by breaking out of the while loop. So we must be stopping.
                     _logger.LogInformation($"Capture has stopped for {this.Info.Id}");
-                    writer.TryComplete();
+                    _outputWriter.TryComplete();
                 }
             }, cancellationToken);
+
+            //int timerIterations = 0;
+
+            //// Set up a timer object that will trigger the frame-grab at a regular interval.
+            //_timer = new Timer(async s /* state */ =>
+            //{
+            //    await _timerMutex.WaitAsync();
+            //    try
+            //    {
+            //        // If the handle was not reset by the producer, then the frame-grab was missed.
+            //        bool missed = _frameGrabTimer.WaitOne(0);
+
+            //        _frameGrabTimer.Set();
+
+            //        if (missed)
+            //        {
+            //            //_logger.LogWarning("Timer: missed frame-grab {0}", timerIterations - 1);
+            //        }
+            //        LogTrace("Timer: grab frame num {0}", timerIterations);
+            //        ++timerIterations;
+            //    }
+            //    finally
+            //    {
+            //        _timerMutex.Release();
+            //    }
+            //}, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(1000.0 / 30.0));
+
         }
 
-        private async Task StartCaptureAsync(TimeSpan publicationInterval, ChannelWriter<VideoFrame> writer, CancellationToken cancellationToken)
+        private int _frameCount = 0;
+        Mat _image1 = new Mat();
+        Mat _image2 = new Mat();
+
+
+        private void StartCapture(TimeSpan publicationInterval, CancellationToken cancellationToken)
         {
             using var reader = this.InitCapture();
+
             var width = reader.FrameWidth;
             var height = reader.FrameHeight;
-            int frameCount = 0;
             int delayMs = (int)(500.0 / this.Fps);
             int errorCount = 0;
 
-            using Mat imageBuffer = new Mat();
-            Mat publishedImage;
-
-            var nextpublicationTime = DateTime.Now;
             while (!cancellationToken.IsCancellationRequested && !_stopping)
             {
+                //_frameGrabTimer.WaitOne(0);
+                _frameCount++;
+
+                Mat imageBuffer = (_frameCount % 2 == 0)? _image1: _image2;
+                bool succesfullGrab;
+
                 var startTime = DateTime.Now;
                 // Grab single frame.
                 var timestamp = DateTime.Now;
 
                 bool success = reader.Read(imageBuffer);
-                frameCount++;
 
                 var endTime = DateTime.Now;
                 LogTrace("Producer: frame-grab took {0} ms", (endTime - startTime).Milliseconds);
 
-                if (!success || imageBuffer.Empty())
+                succesfullGrab = success && !imageBuffer.Empty();
+
+                if (succesfullGrab)
+                {
+                    var ctx = new VideoFrameContext(timestamp, _frameCount, this.Info);
+                    var videoFrame = new VideoFrame(imageBuffer, ctx);
+                    _frameBufferWriter.TryWrite(videoFrame);
+                }
+                else
                 {
                     // If we've reached the end of the video, stop here.
                     if (IsContinuous)
@@ -172,22 +242,8 @@ namespace DetectiCam.Core.VideoCapturing
                         break;
                     }
                 }
-                else if (timestamp > nextpublicationTime)
-                {
-                    LogTrace("Producer: create frame to publish:");
-                    nextpublicationTime = timestamp + publicationInterval;
-
-                    publishedImage = PreprocessImage(imageBuffer);
-
-                    // Package the image for submission.
-                    VideoFrameContext meta = new VideoFrameContext(timestamp, frameCount, this.Info);
-                    VideoFrame vframe = new VideoFrame(publishedImage, meta);
-
-                    LogTrace("Producer: do publishing");
-                    var writeResult = writer.TryWrite(vframe);
-                }
-                //Thread.Sleep(delayMs);
-                await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
+                Thread.Sleep(delayMs);
+                //await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -231,9 +287,12 @@ namespace DetectiCam.Core.VideoCapturing
                 if (disposing)
                 {
                     _stopping = true;
+                    //_frameGrabTimer.Set();
                     StopProcessingAsync()?.Wait(2000);
                     _videoCapture?.Dispose();
                     _videoCapture = null;
+                    _image1?.Dispose();
+                    _image2?.Dispose();
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer
@@ -254,6 +313,25 @@ namespace DetectiCam.Core.VideoCapturing
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        public void SetNextTrigger(DateTime timestamp, int triggerId)
+        {
+            if (_frameBufferReader.TryRead(out var frame))
+            {
+                Mat imageToPublish = PreprocessImage(frame.Image);
+
+                // Package the image for submission.
+                VideoFrame vframe = new VideoFrame(imageToPublish, frame.Metadata);
+                vframe.TriggerId = triggerId;
+
+                _logger.LogDebug($"Producer: do publishing of frame {frame.Metadata.Timestamp}; {this.Info.Id}; of trigger: {triggerId}");
+                var writeResult = _outputWriter.TryWrite(vframe);
+            }
+            else
+            {
+                _logger.LogWarning("No frame available to publish");
+            }
         }
     }
 }

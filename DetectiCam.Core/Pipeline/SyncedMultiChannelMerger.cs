@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using DetectiCam.Core.Pipeline;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Core.VideoCapturing
 {
-    public class MultiChannelMerger<T> : IDisposable
+    public class SyncedMultiChannelMerger<T> : IDisposable where T : ISyncTokenProvider
     {
         private readonly List<ChannelReader<T>?> _inputReaders;
         private readonly ChannelWriter<IList<T>> _outputWriter;
@@ -18,7 +19,7 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly CancellationTokenSource _internalCts;
         private bool disposedValue;
 
-        public MultiChannelMerger(IEnumerable<ChannelReader<T>> inputReaders, ChannelWriter<IList<T>> outputWriter,
+        public SyncedMultiChannelMerger(IEnumerable<ChannelReader<T>> inputReaders, ChannelWriter<IList<T>> outputWriter,
             ILogger logger)
         {
             _inputReaders = new List<ChannelReader<T>?>(inputReaders);
@@ -29,7 +30,7 @@ namespace DetectiCam.Core.VideoCapturing
         }
 
         public Task ExecuteProcessingAsync(CancellationToken stoppingToken)
-        { 
+        {
             _mergeTask = Task.Run(async () =>
             {
                 try
@@ -40,44 +41,42 @@ namespace DetectiCam.Core.VideoCapturing
 
                     while (true)
                     {
+
                         linkedToken.ThrowIfCancellationRequested();
-                        List<T> results = new List<T>();
+                        T[] results = new T[_inputReaders.Count];
 
                         _logger.LogDebug("Merging frames start batch");
 
-                        for (var index = 0; index < _inputReaders.Count; index++)
+                        int? maxToken = null;
+
+                        for (var pass = 0; pass <= 1; pass++)
                         {
-                            try
+                            for (var index = 0; index < _inputReaders.Count; index++)
                             {
-                                var curReader = _inputReaders[index];
-                                if (curReader != null)
+                                try
                                 {
-                                    var result = await curReader.ReadAsync(linkedToken).ConfigureAwait(false);
-                                    results.Add(result);
+                                    maxToken = await ReadInputAtIndex(results, index, maxToken, linkedToken).ConfigureAwait(false);
+                                }
+                                catch (ChannelClosedException)
+                                {
+                                    _logger.LogWarning("Channel closed");
+                                    _inputReaders[index] = null;
                                 }
                             }
-                            catch (OperationCanceledException)
-                            {
-                                //Operation has timed out
-                                _logger.LogWarning("Reading from source has timed out");
-                            }
-                            catch (ChannelClosedException)
-                            {
-                                _logger.LogWarning("Channel closed");
-                                _inputReaders[index] = null;
-                            }
                         }
+
                         _logger.LogDebug("Merging frames end batch");
 
-                        if (results.Count == _inputReaders.Count)
+                        if (results.All(x => x != null))
                         {
+                            //Only provide output when we have all results.
                             if (!_outputWriter.TryWrite(results))
                             {
                                 _logger.LogWarning("Could not write merged result!");
                             }
                             else
                             {
-                                _logger.LogDebug("New Merged result available");
+                                _logger.LogDebug("New Merged result available for token: {triggerId}", maxToken);
                             }
                         }
                         else
@@ -99,6 +98,34 @@ namespace DetectiCam.Core.VideoCapturing
             }, stoppingToken);
 
             return _mergeTask;
+        }
+
+        private async Task<int?> ReadInputAtIndex(IList<T> results, int index, int? maxToken, CancellationToken cancellationToken)
+        {
+            var curResult = results[index];
+
+            if (curResult != null && curResult.SyncToken == maxToken)
+            {
+                return curResult.SyncToken;
+            }
+            else
+            {
+                var curReader = _inputReaders[index];
+                if (curReader != null)
+                {
+                    //Read results until in sync
+                    do
+                    {
+                        curResult = await curReader.ReadAsync(cancellationToken).ConfigureAwait(false);
+                        results[index] = curResult;
+                    } while (curResult.SyncToken < maxToken);
+                    return curResult.SyncToken;
+                }
+                else
+                {
+                    return null;
+                }
+            }
         }
 
         public async Task StopProcessingAsync()

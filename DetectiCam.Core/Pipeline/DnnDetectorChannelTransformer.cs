@@ -67,7 +67,7 @@ namespace DetectiCam.Core.Pipeline
 #pragma warning restore CA1031 // Do not catch general exception types
             {
                 output.Exception = ae;
-                Logger.LogDebug("DoAnalysis: Exception from analysis task:{message}", ae.Message);
+                Logger.LogError("DoAnalysis: Exception from analysis task:{message}", ae.Message);
             }
 
             return Task.FromResult(output);

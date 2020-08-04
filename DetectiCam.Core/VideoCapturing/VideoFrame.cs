@@ -1,4 +1,5 @@
 #nullable enable
+using DetectiCam.Core.Pipeline;
 using OpenCvSharp;
 using System;
 
@@ -21,7 +22,7 @@ namespace DetectiCam.Core.VideoCapturing
 
     /// <summary> A video frame produced by the Framegrabber.
     ///     This class encapsulates the image and metadata. </summary>
-    public class VideoFrame
+    public class VideoFrame : ISyncTokenProvider
     {
         /// <summary> Constructor. </summary>
         /// <param name="image">    The image captured by the camera. </param>
@@ -39,5 +40,9 @@ namespace DetectiCam.Core.VideoCapturing
         /// <summary> Gets the frame's metadata. </summary>
         /// <value> The metadata. </value>
         public VideoFrameContext Metadata { get; }
+
+        public int? TriggerId { get; set; }
+
+        public int? SyncToken => TriggerId;
     }
 }
