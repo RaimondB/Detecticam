@@ -1,4 +1,5 @@
-﻿using DetectiCam.Core.Detection;
+﻿using DetectiCam.Core.Common;
+using DetectiCam.Core.Detection;
 using DetectiCam.Core.VideoCapturing;
 using DetectiCam.Core.Visualization;
 using Microsoft.Extensions.Configuration;
@@ -19,49 +20,33 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Core.ResultProcessor
 {
-    public class CapturePublisher : IAsyncSingleResultProcessor
+    public class CapturePublisher : ConfigurableService<CapturePublisher, CapturePublisherOptions>, IAsyncSingleResultProcessor
     {
         private readonly string? _captureRootPath;
-        private readonly ILogger _logger;
-        private readonly CapturePublisherOptions _options;
         private readonly bool _isEnabled = true;
 
         public CapturePublisher(ILogger<CapturePublisher> logger, IConfiguration config,
-            IOptions<CapturePublisherOptions> options)
+            IOptions<CapturePublisherOptions> options) :
+            base(logger, options)
         {
-            if (logger is null) throw new ArgumentNullException(nameof(logger));
             if (config is null) throw new ArgumentNullException(nameof(config));
-            if (options is null) throw new ArgumentNullException(nameof(options));
-
-            _logger = logger;
 
             var path = config.GetSection("capture-path").Get<string>();
             if (!String.IsNullOrEmpty(path))
             {
-                _logger.LogWarning("You are using a depreacted way to configure the Capture Publisher. Switch to \"capture-publisher\" section instead.");
+                Logger.LogWarning("You are using a depreacted way to configure the Capture Publisher. Switch to \"capture-publisher\" section instead.");
                 _captureRootPath = Path.GetFullPath(path);
                 EnsureDirectoryPath(_captureRootPath);
             }
 
-            try
-            {
-                _options = options.Value;
-                _isEnabled = _options.Enabled;
+            _isEnabled = Options.Enabled;
 
-                if (_isEnabled)
-                {
-                    if (!String.IsNullOrEmpty(_options.CaptureRootDir))
-                    {
-                        _captureRootPath = _options.CaptureRootDir;
-                        EnsureDirectoryPath(_captureRootPath);
-                    }
-                }
-            }
-            catch (OptionsValidationException ex)
+            if (_isEnabled)
             {
-                foreach (var failure in ex.Failures)
+                if (!String.IsNullOrEmpty(Options.CaptureRootDir))
                 {
-                    _logger.LogError(failure);
+                    _captureRootPath = Options.CaptureRootDir;
+                    EnsureDirectoryPath(_captureRootPath);
                 }
             }
         }
@@ -79,7 +64,7 @@ namespace DetectiCam.Core.ResultProcessor
             }
             catch (IOException ioex)
             {
-                _logger.LogError(ioex, $"Could not create directory path for filepath:{path}");
+                Logger.LogError(ioex, $"Could not create directory path for filepath:{path}");
             }
         }
 
@@ -96,7 +81,7 @@ namespace DetectiCam.Core.ResultProcessor
             if (frame is null) throw new ArgumentNullException(nameof(frame));
             if (results is null) throw new ArgumentNullException(nameof(results));
 
-            _logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}. {results.Length} objects detected");
+            Logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}. {results.Length} objects detected");
 
             var labelStats = from r in results
                               group r by r.Label into g
@@ -104,10 +89,10 @@ namespace DetectiCam.Core.ResultProcessor
 
             var stats = String.Join("; ", labelStats);
          
-            _logger.LogInformation($"Detected: {stats}");
+            Logger.LogInformation($"Detected: {stats}");
 
 
-            var filename = _options.CapturePattern;
+            var filename = Options.CapturePattern;
             filename = ReplaceTsToken(filename, frame);
             filename = ReplaceVsIdToken(filename, frame);
             filename = ReplaceDateTimeTokens(filename, frame);
@@ -120,11 +105,11 @@ namespace DetectiCam.Core.ResultProcessor
 
             if (Cv2.ImWrite(filePath, result))
             {
-                _logger.LogInformation("Interesting Detection Saved: {filename}", filename);
+                Logger.LogInformation("Interesting Detection Saved: {filename}", filename);
             }
             else
             {
-                _logger.LogError("Error during write of file {filePath}", filePath);
+                Logger.LogError("Error during write of file {filePath}", filePath);
             }
             return Task.CompletedTask;
         }

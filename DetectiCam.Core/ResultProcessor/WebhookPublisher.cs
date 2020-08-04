@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Core.ResultProcessor
 {
-    public class WebhookPublisher : IAsyncSingleResultProcessor
+    public class WebhookPublisher :  IAsyncSingleResultProcessor
     {
         private readonly ILogger _logger;
         private readonly IHttpClientFactory _clientFactory;
