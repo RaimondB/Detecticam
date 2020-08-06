@@ -1,6 +1,7 @@
 ﻿using OpenCvSharp;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Range = OpenCvSharp.Range;
 
@@ -8,6 +9,7 @@ namespace DetectiCam.Core.Detection
 {
     public static class OpenCVExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining|MethodImplOptions.AggressiveOptimization)]
         public static int FindMaxValueIndexInRange<T>(this Mat inputMatrix, int dim0Index, int dim1Index, Range dim2Range) where T:unmanaged,IComparable<T>
         {
             if (inputMatrix is null) throw new ArgumentNullException(nameof(inputMatrix));
@@ -27,6 +29,7 @@ namespace DetectiCam.Core.Detection
             return dim2MaxIndex;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static int FindMaxValueIndexInRange<T>(this Mat inputMatrix, int dim0Index, Range dim1Range) where T : unmanaged, IComparable<T>
         {
             if (inputMatrix is null) throw new ArgumentNullException(nameof(inputMatrix));

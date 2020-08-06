@@ -90,7 +90,7 @@ namespace DetectiCam.Core.VideoCapturing
             Channel.CreateUnbounded<AnalysisResult>(
             new UnboundedChannelOptions()
             {
-                AllowSynchronousContinuations = false,
+                AllowSynchronousContinuations = true,
                 SingleReader = true,
                 SingleWriter = true
             });
@@ -106,6 +106,7 @@ namespace DetectiCam.Core.VideoCapturing
             {
                 _logger.LogInformation("Start Capturing: {streamId}", stream.Info.Id);
                 var captureStartedTask = stream.StartCapturing(cancellationToken);
+                _logger.LogInformation("Capturing Started: {streamId}", stream.Info.Id);
                 streamsStartedTasks.Add(captureStartedTask);
             }
 
@@ -114,7 +115,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         private void CreateCapturingChannel(VideoStreamInfo streamInfo)
         {
-            _logger.LogInformation("CreateCapturingChannel: {streamId}", streamInfo.Id);
+            _logger.LogDebug("CreateCapturingChannel: {streamId}", streamInfo.Id);
 
             var newChannel = CreateCapturingChannel();
             _capturingChannels.Add(newChannel);

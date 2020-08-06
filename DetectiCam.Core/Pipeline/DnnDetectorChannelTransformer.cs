@@ -26,12 +26,10 @@ namespace DetectiCam.Core.Pipeline
 
             _detector = detector;
             _detector.Initialize();
-            
-            SetTransformer(this.DoAnalyzeFrames);
         }
 
 
-        protected Task<AnalysisResult> DoAnalyzeFrames(IList<VideoFrame> frames, CancellationToken cancellationToken)
+        protected override Task<AnalysisResult> ExecuteTransform(IList<VideoFrame> frames, CancellationToken cancellationToken)
         {
             var output = new AnalysisResult(frames);
 
@@ -51,7 +49,7 @@ namespace DetectiCam.Core.Pipeline
                     result = _detector.ClassifyObjects(images);
 
                     watch.Stop();
-                    Logger.LogInformation($"Classifiy-objects ms:{watch.ElapsedMilliseconds}");
+                    Logger.LogInformation("Classifiy-objects ms:{classifyDuration}", watch.ElapsedMilliseconds);
                 }
                 else
                 {

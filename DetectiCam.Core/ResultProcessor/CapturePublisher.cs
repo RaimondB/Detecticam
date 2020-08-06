@@ -67,7 +67,7 @@ namespace DetectiCam.Core.ResultProcessor
             }
             catch (IOException ioex)
             {
-                Logger.LogError(ioex, $"Could not create directory path for filepath:{path}");
+                Logger.LogError(ioex, "Could not create directory path for filepath:{capturepath}", path);
             }
         }
 
@@ -84,7 +84,8 @@ namespace DetectiCam.Core.ResultProcessor
             if (frame is null) throw new ArgumentNullException(nameof(frame));
             if (results is null) throw new ArgumentNullException(nameof(results));
 
-            Logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}. {results.Length} objects detected");
+            Logger.LogInformation("New result received for frame acquired at {timestamp}. {detectionCount} objects detected",
+                frame.Metadata.Timestamp, results.Length);
 
             var labelStats = from r in results
                               group r by r.Label into g
@@ -92,7 +93,7 @@ namespace DetectiCam.Core.ResultProcessor
 
             var stats = String.Join("; ", labelStats);
          
-            Logger.LogInformation($"Detected: {stats}");
+            Logger.LogInformation("Detected: {detectionstats}", stats);
 
 
             var filename = Options.CapturePattern;
@@ -129,13 +130,13 @@ namespace DetectiCam.Core.ResultProcessor
             return filePattern.Replace("{vsid}", frame.Metadata.Info.Id, StringComparison.OrdinalIgnoreCase);
         }
 
+        private static readonly Regex _patternMatcher = new Regex(@"(\{.+\})", RegexOptions.Compiled);
+
         private static string ReplaceDateTimeTokens(string filePattern, VideoFrame frame)
         {
             var ts = frame.Metadata.Timestamp;
 
-            Regex patternMatcher = new Regex(@"(\{.+\})");
-
-            var result = patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{','}'), CultureInfo.InvariantCulture));
+            var result = _patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{','}'), CultureInfo.InvariantCulture));
 
             return result;
         }

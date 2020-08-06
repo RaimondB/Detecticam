@@ -8,38 +8,30 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Core.VideoCapturing
 {
-    public class ChannelTransformer<TInput, TOutput> : IDisposable
+    public abstract class ChannelTransformer<TInput, TOutput> : IDisposable
     {
         private readonly ChannelReader<TInput> _inputReader;
         private readonly ChannelWriter<TOutput> _outputWriter;
         private readonly ILogger _logger;
         private readonly CancellationTokenSource _internalCts;
 
-        private Func<TInput, CancellationToken, Task<TOutput>>? _transformer;
         private Task? _processorTask = null;
 
         protected ILogger Logger => _logger;
 
         public ChannelTransformer(ChannelReader<TInput> inputReader, ChannelWriter<TOutput> outputWriter,
-            ILogger logger,
-            Func<TInput, CancellationToken, Task<TOutput>>? transformer = default)
+            ILogger logger)
         {
             _inputReader = inputReader;
             _outputWriter = outputWriter;
             _logger = logger;
-            _transformer = transformer;
             _internalCts = new CancellationTokenSource();
         }
 
-        protected void SetTransformer(Func<TInput, CancellationToken, Task<TOutput>>? transformer)
-        {
-            _transformer = transformer;
-        }
+        protected abstract Task<TOutput> ExecuteTransform(TInput input, CancellationToken cancellationToken);
 
         public Task ExecuteProcessingAsync(CancellationToken stoppingToken)
         {
-            if (_transformer is null) throw new InvalidOperationException("Transformer function not set");
-
             _processorTask = Task.Run(async () =>
             {
                 try
@@ -50,7 +42,7 @@ namespace DetectiCam.Core.VideoCapturing
 
                     await foreach(var inputValue in _inputReader.ReadAllAsync(linkedToken))
                     {
-                        var outputValue = await _transformer(inputValue, linkedToken).ConfigureAwait(false);
+                        var outputValue = await ExecuteTransform(inputValue, linkedToken).ConfigureAwait(false);
 
                         if (!_outputWriter.TryWrite(outputValue))
                         {

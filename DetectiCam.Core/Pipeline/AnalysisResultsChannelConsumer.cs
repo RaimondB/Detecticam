@@ -24,10 +24,9 @@ namespace DetectiCam.Core.VideoCapturing
             if (resultProcessors is null) throw new ArgumentNullException(nameof(resultProcessors));
 
             _resultProcessors = new List<IAsyncSingleResultProcessor>(resultProcessors);
-            SetProcessor(ProcessAnalysisResult);
         }
 
-        private async Task ProcessAnalysisResult(AnalysisResult e, CancellationToken cancellationToken)
+        protected override async Task ExecuteProcessorAsync(AnalysisResult e, CancellationToken cancellationToken)
         {
             if (e.TimedOut)
                 Logger.LogWarning("Analysis function timed out.");
@@ -46,10 +45,13 @@ namespace DetectiCam.Core.VideoCapturing
 
                         using Mat inputImage = frame.Image;
 
-                        Logger.LogInformation($"New result received for {frame.Metadata.Info.Id} frame acquired at {frame.Metadata.Timestamp}.");
+                        Logger.LogInformation("New result received for {vsid} frame acquired at {timestamp}.",
+                            frame.Metadata.Info.Id, frame.Metadata.Timestamp);
+
                         if (analysis.Length > 0 && analysis.Any(o => o.Label == "person"))
                         {
-                            Logger.LogInformation($"Person detected for frame acquired at {frame.Metadata.Timestamp}. Sending to result processors");
+                            Logger.LogInformation("Person detected for frame acquired at {timestamp}. Sending to result processors",
+                                frame.Metadata.Timestamp);
 
                             foreach (var processor in _resultProcessors)
                             {
@@ -67,7 +69,7 @@ namespace DetectiCam.Core.VideoCapturing
                 catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
                 {
-                    Logger.LogError(ex, "Exceptions during publication of detection reaults");
+                    Logger.LogError(ex, "Exceptions during publication of detection results");
                 }
             }
         }

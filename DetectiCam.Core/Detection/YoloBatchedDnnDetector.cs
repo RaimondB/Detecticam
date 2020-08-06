@@ -38,7 +38,7 @@ namespace DetectiCam.Core.Detection
         private const float threshold = 0.5f;       //for confidence 
         private const float nmsThreshold = 0.3f;    //threshold for nms
 
-        public YoloBatchedDnnDetector(ILogger<IDnnDetector> logger, IConfiguration configuration)
+        public YoloBatchedDnnDetector(ILogger<YoloBatchedDnnDetector> logger, IConfiguration configuration)
         {
             if (configuration is null) throw new ArgumentNullException(nameof(configuration));
             if (logger is null) throw new ArgumentNullException(nameof(logger));
@@ -279,7 +279,8 @@ namespace DetectiCam.Core.Detection
             {
                 //using non-maximum suppression to reduce overlapping low confidence box
                 CvDnn.NMSBoxes(boxes, confidences, threshold, nmsThreshold, out indices);
-                _logger.LogDebug($"NMSBoxes drop {confidences.Count - indices.Length} overlapping result.");
+                _logger.LogDebug("NMSBoxes drop {overlappingResults} overlapping result.",
+                    confidences.Count - indices.Length);
             }
 
             var result = new List<DnnDetectedObject>();

@@ -38,10 +38,8 @@ namespace DetectiCam.Core.VideoCapturing
                         _internalCts.Token, stoppingToken);
                     var linkedToken = cts.Token;
 
-                    while (true)
+                    while (!linkedToken.IsCancellationRequested)
                     {
-
-                        linkedToken.ThrowIfCancellationRequested();
                         T[] results = new T[_inputReaders.Count];
 
                         _logger.LogDebug("Merging frames start batch");
