@@ -12,7 +12,6 @@ namespace DetectiCam.Core.Pipeline
         private readonly ILogger _logger;
         private readonly List<ITimestampTrigger> _subjects;
         private Timer? _timer;
-        private bool disposedValue;
 
         public PeriodicTrigger(ILogger logger, IEnumerable<ITimestampTrigger> subjects)
         {
@@ -28,33 +27,17 @@ namespace DetectiCam.Core.Pipeline
             {
                 var now = DateTime.Now;
                 triggerId++;
-                _logger.LogInformation("Timer triggered at:{triggerTimestamp} wit id:{triggerId}", now, triggerId);
+                _logger.LogInformation("Timer triggered at:{triggerTimestamp} with id:{triggerId}", now, triggerId);
                 foreach(var subject in _subjects)
                 {
-                    subject.SetNextTrigger(now, triggerId);
+                    subject.ExecuteTrigger(now, triggerId);
                 }
             }, null, initialDelay, interval);
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    _timer?.Dispose();
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
-                disposedValue = true;
-            }
-        }
-
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
+            _timer?.Dispose();
             GC.SuppressFinalize(this);
         }
     }

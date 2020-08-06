@@ -63,7 +63,9 @@ namespace DetectiCam.Core.VideoCapturing
                 {
                     await Task.WhenAll(resultTasks).ConfigureAwait(false);
                 }
-                catch(AggregateException ex)
+#pragma warning disable CA1031 // Do not catch general exception types
+                catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                 {
                     Logger.LogError(ex, "Exceptions during publication of detection reaults");
                 }

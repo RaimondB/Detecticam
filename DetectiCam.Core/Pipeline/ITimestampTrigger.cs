@@ -6,6 +6,6 @@ namespace DetectiCam.Core.Pipeline
 {
     public interface ITimestampTrigger
     {
-        void SetNextTrigger(DateTime timestamp, int triggerId);
+        void ExecuteTrigger(DateTime timestamp, int triggerId);
     }
 }

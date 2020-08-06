@@ -97,14 +97,19 @@ namespace DetectiCam.Core.VideoCapturing
 
         private readonly List<Channel<VideoFrame>> _capturingChannels = new List<Channel<VideoFrame>>();
 
-        public void StartCapturingAllStreamsAsync(CancellationToken cancellationToken)
+        public Task StartCapturingAllStreamsAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Start Capturing All Streams");
+            List<Task> streamsStartedTasks = new List<Task>();
+
             foreach (var stream in _streams)
             {
                 _logger.LogInformation("Start Capturing: {streamId}", stream.Info.Id);
-                stream.StartCapturing(_analysisInterval, cancellationToken);
+                var captureStartedTask = stream.StartCapturing(cancellationToken);
+                streamsStartedTasks.Add(captureStartedTask);
             }
+
+            return Task.WhenAll(streamsStartedTasks);
         }
 
         private void CreateCapturingChannel(VideoStreamInfo streamInfo)
@@ -133,7 +138,7 @@ namespace DetectiCam.Core.VideoCapturing
         private DnnDetectorChannelTransformer? _analyzer;
         private AnalysisResultsChannelConsumer? _resultPublisher;
 
-        public Task StartProcessingAll(CancellationToken cancellationToken)
+        public async Task StartProcessingAll(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Create processing pipeline");
             CreateCapturingChannels();
@@ -155,12 +160,13 @@ namespace DetectiCam.Core.VideoCapturing
             var resultPublisherTask = _resultPublisher.ExecuteProcessingAsync(cancellationToken);
 
             _logger.LogInformation("Start processing pipeline");
-            StartCapturingAllStreamsAsync(cancellationToken);
+            await StartCapturingAllStreamsAsync(cancellationToken).ConfigureAwait(false);
 
+            //Only start the trigger when we know that all capturing streams have started.
             _trigger = new PeriodicTrigger(_logger, _streams);
             _trigger.Start(TimeSpan.FromSeconds(_streams.Count), _analysisInterval);
 
-            return Task.WhenAll(mergerTask, analyzerTask, resultPublisherTask);
+            await Task.WhenAll(mergerTask, analyzerTask, resultPublisherTask).ConfigureAwait(false);
         }
 
         /// <summary> Stops capturing and processing video frames. </summary>

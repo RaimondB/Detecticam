@@ -14,7 +14,7 @@ using Range = OpenCvSharp.Range;
 
 namespace DetectiCam.Core.Detection
 {
-    public class Yolo3BatchedDnnDetector : IBatchedDnnDetector
+    public class YoloBatchedDnnDetector : IBatchedDnnDetector
     {
         private readonly ILogger _logger;
 
@@ -38,7 +38,7 @@ namespace DetectiCam.Core.Detection
         private const float threshold = 0.5f;       //for confidence 
         private const float nmsThreshold = 0.3f;    //threshold for nms
 
-        public Yolo3BatchedDnnDetector(ILogger<IDnnDetector> logger, IConfiguration configuration)
+        public YoloBatchedDnnDetector(ILogger<IDnnDetector> logger, IConfiguration configuration)
         {
             if (configuration is null) throw new ArgumentNullException(nameof(configuration));
             if (logger is null) throw new ArgumentNullException(nameof(logger));
@@ -104,16 +104,16 @@ namespace DetectiCam.Core.Detection
 
             if (imageList.Count == 1)
             {
-                return ExtractYolo3SingleResults(outs, imageList[0], threshold, nmsThreshold);
+                return ExtractYoloSingleResults(outs, imageList[0], threshold, nmsThreshold);
             }
             else
             {
-                return ExtractYolo3BatchedResults(outs, images, threshold, nmsThreshold);
+                return ExtractYoloBatchedResults(outs, images, threshold, nmsThreshold);
             }
         }
 
 
-        private DnnDetectedObject[][] ExtractYolo3BatchedResults(IEnumerable<Mat> output, IEnumerable<Mat> image, float threshold, float nmsThreshold, bool nms = true)
+        private DnnDetectedObject[][] ExtractYoloBatchedResults(IEnumerable<Mat> output, IEnumerable<Mat> image, float threshold, float nmsThreshold, bool nms = true)
         {
             var inputImages = image.ToList();
 
@@ -193,7 +193,7 @@ namespace DetectiCam.Core.Detection
             return results;
         }
 
-        private DnnDetectedObject[][] ExtractYolo3SingleResults(IEnumerable<Mat> output, Mat image, float threshold, float nmsThreshold, bool nms = true)
+        private DnnDetectedObject[][] ExtractYoloSingleResults(IEnumerable<Mat> output, Mat image, float threshold, float nmsThreshold, bool nms = true)
         {
             DnnDetectedObject[][] results = new DnnDetectedObject[1][];
 
@@ -319,7 +319,7 @@ namespace DetectiCam.Core.Detection
         }
 
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        ~Yolo3BatchedDnnDetector()
+        ~YoloBatchedDnnDetector()
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: false);

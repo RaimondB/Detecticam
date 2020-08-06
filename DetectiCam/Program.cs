@@ -45,7 +45,7 @@ namespace CameraWatcher
                     services.AddHttpClient();
 
                     services.AddHostedService<BatchedCameraWatcherService>();
-                    services.AddSingleton<IBatchedDnnDetector, Yolo3BatchedDnnDetector>();
+                    services.AddSingleton<IBatchedDnnDetector, YoloBatchedDnnDetector>();
                     services.AddSingleton<IAsyncSingleResultProcessor, CapturePublisher>();
                     services.AddSingleton<IAsyncSingleResultProcessor, WebhookPublisher>();
                     services.AddSingleton<IAsyncSingleResultProcessor, MqttPublisher>();

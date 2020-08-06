@@ -22,7 +22,7 @@ namespace DetectiCam.Core.ResultProcessor
 {
     public class CapturePublisher : ConfigurableService<CapturePublisher, CapturePublisherOptions>, IAsyncSingleResultProcessor
     {
-        private readonly string? _captureRootPath;
+        private readonly string _captureRootPath;
         private readonly bool _isEnabled = true;
 
         public CapturePublisher(ILogger<CapturePublisher> logger, IConfiguration config,
@@ -31,6 +31,9 @@ namespace DetectiCam.Core.ResultProcessor
         {
             if (config is null) throw new ArgumentNullException(nameof(config));
 
+            _isEnabled = Options.Enabled;
+            _captureRootPath = Options.CaptureRootDir;
+
             var path = config.GetSection("capture-path").Get<string>();
             if (!String.IsNullOrEmpty(path))
             {
@@ -38,15 +41,15 @@ namespace DetectiCam.Core.ResultProcessor
                 _captureRootPath = Path.GetFullPath(path);
                 EnsureDirectoryPath(_captureRootPath);
             }
-
-            _isEnabled = Options.Enabled;
-
-            if (_isEnabled)
+            else
             {
-                if (!String.IsNullOrEmpty(Options.CaptureRootDir))
+                if (_isEnabled)
                 {
-                    _captureRootPath = Options.CaptureRootDir;
-                    EnsureDirectoryPath(_captureRootPath);
+                    if (!String.IsNullOrEmpty(Options.CaptureRootDir))
+                    {
+                        _captureRootPath = Options.CaptureRootDir;
+                        EnsureDirectoryPath(_captureRootPath);
+                    }
                 }
             }
         }
@@ -75,8 +78,8 @@ namespace DetectiCam.Core.ResultProcessor
 
         public Task ProcessResultAsync(VideoFrame frame, DnnDetectedObject[] results)
         {
-            //If the output path is not set, skip this processor.
-            if (String.IsNullOrEmpty(_captureRootPath)) return Task.CompletedTask;
+            //If not enabled, skip this processor.
+            if (!_isEnabled) return Task.CompletedTask;
 
             if (frame is null) throw new ArgumentNullException(nameof(frame));
             if (results is null) throw new ArgumentNullException(nameof(results));
