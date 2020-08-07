@@ -29,7 +29,7 @@ namespace DetectiCam.Core.Pipeline
         }
 
 
-        protected override Task<IList<VideoFrame>> ExecuteTransform(IList<VideoFrame> frames, CancellationToken cancellationToken)
+        protected override ValueTask<IList<VideoFrame>> ExecuteTransform(IList<VideoFrame> frames, CancellationToken cancellationToken)
         {
             if (frames is null) throw new ArgumentNullException(nameof(frames));
 
@@ -71,7 +71,7 @@ namespace DetectiCam.Core.Pipeline
                 Logger.LogError("DoAnalysis: Exception from analysis task:{message}", ae.Message);
             }
 
-            return Task.FromResult(frames);
+            return new ValueTask<IList<VideoFrame>>(frames);
         }
     }
 }

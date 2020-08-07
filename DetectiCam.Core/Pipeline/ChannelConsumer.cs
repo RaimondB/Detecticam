@@ -11,17 +11,16 @@ namespace DetectiCam.Core.VideoCapturing
     public abstract class ChannelConsumer<TInput> : IDisposable
     {
         private readonly ChannelReader<TInput> _inputReader;
-        private readonly ILogger _logger;
         private readonly CancellationTokenSource _internalCts;
         private Task? _processorTask = null;
 
-        protected ILogger Logger => _logger;
+        protected ILogger Logger { get; }
 
         public ChannelConsumer(ChannelReader<TInput> inputReader,
             ILogger logger)
         {
             _inputReader = inputReader;
-            _logger = logger;
+            Logger = logger;
             _internalCts = new CancellationTokenSource();
         }
 
@@ -42,12 +41,12 @@ namespace DetectiCam.Core.VideoCapturing
             }
             catch (OperationCanceledException)
             {
-                _logger.LogWarning("Consume operation cancelled");
+                Logger.LogWarning("Consume operation cancelled");
                 throw;
             }
             finally
             {
-                _logger.LogInformation("Stopping:completing consumer channel!");
+                Logger.LogInformation("Stopping:completing consumer channel!");
             }
         }
 

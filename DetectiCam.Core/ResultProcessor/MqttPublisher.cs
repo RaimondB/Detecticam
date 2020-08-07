@@ -62,12 +62,11 @@ namespace DetectiCam.Core.ResultProcessor
             }
         }
 
-        public Task ProcessResultAsync(VideoFrame frame, IList<DnnDetectedObject> results)
+        public Task ProcessResultAsync(VideoFrame frame)
         {
             if (_isEnabled && _client != null)
             {
                 if (frame is null) throw new ArgumentNullException(nameof(frame));
-                if (results is null) throw new ArgumentNullException(nameof(results));
 
                 string strValue = "{ \"detection\" : true }";
                 string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/state";

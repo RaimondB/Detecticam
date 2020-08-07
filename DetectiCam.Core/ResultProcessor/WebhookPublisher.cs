@@ -27,10 +27,9 @@ namespace DetectiCam.Core.ResultProcessor
             _clientFactory = clientFactory;
         }
 
-        public async Task ProcessResultAsync(VideoFrame frame, IList<DnnDetectedObject> results)
+        public async Task ProcessResultAsync(VideoFrame frame)
         {
             if (frame is null) throw new ArgumentNullException(nameof(frame));
-            if (results is null) throw new ArgumentNullException(nameof(results));
 
             var url = frame.Metadata.Info.CallbackUrl;
             if (url != null)

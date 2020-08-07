@@ -76,13 +76,13 @@ namespace DetectiCam.Core.ResultProcessor
             return $"{metaData.Timestamp:yyyyMMddTHHmmss}";
         }
 
-        public Task ProcessResultAsync(VideoFrame frame, IList<DnnDetectedObject> results)
+        public Task ProcessResultAsync(VideoFrame frame)
         {
             //If not enabled, skip this processor.
             if (!_isEnabled) return Task.CompletedTask;
 
             if (frame is null) throw new ArgumentNullException(nameof(frame));
-            if (results is null) throw new ArgumentNullException(nameof(results));
+            var results = frame.Metadata.AnalysisResult;
 
             Logger.LogInformation("New result received for frame acquired at {timestamp}. {detectionCount} objects detected",
                 frame.Metadata.Timestamp, results.Count);

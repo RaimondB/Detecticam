@@ -51,24 +51,27 @@ namespace DetectiCam.Core.VideoCapturing
 
                             foreach (var processor in _resultProcessors)
                             {
-                                resultTasks.Add(processor.ProcessResultAsync(frame, analysisResult));
+                                resultTasks.Add(processor.ProcessResultAsync(frame));
                             }
                         }
                     }
                 }
 
                 await Task.WhenAll(resultTasks).ConfigureAwait(false);
-                resultTasks.Clear();
-                foreach(var frame in analyzedFrames)
-                {
-                    frame.Dispose();
-                }
             }
 #pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
             {
                 Logger.LogError(ex, "Exceptions during publication of detection results");
+            }
+            finally
+            {
+                resultTasks.Clear();
+                foreach (var frame in analyzedFrames)
+                {
+                    frame.Dispose();
+                }
             }
         }
 
