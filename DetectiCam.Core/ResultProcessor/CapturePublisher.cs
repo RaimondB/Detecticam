@@ -76,7 +76,7 @@ namespace DetectiCam.Core.ResultProcessor
             return $"{metaData.Timestamp:yyyyMMddTHHmmss}";
         }
 
-        public Task ProcessResultAsync(VideoFrame frame, DnnDetectedObject[] results)
+        public Task ProcessResultAsync(VideoFrame frame, IList<DnnDetectedObject> results)
         {
             //If not enabled, skip this processor.
             if (!_isEnabled) return Task.CompletedTask;
@@ -85,7 +85,7 @@ namespace DetectiCam.Core.ResultProcessor
             if (results is null) throw new ArgumentNullException(nameof(results));
 
             Logger.LogInformation("New result received for frame acquired at {timestamp}. {detectionCount} objects detected",
-                frame.Metadata.Timestamp, results.Length);
+                frame.Metadata.Timestamp, results.Count);
 
             var labelStats = from r in results
                               group r by r.Label into g
@@ -127,7 +127,7 @@ namespace DetectiCam.Core.ResultProcessor
 
         private static string ReplaceVsIdToken(string filePattern, VideoFrame frame)
         {
-            return filePattern.Replace("{vsid}", frame.Metadata.Info.Id, StringComparison.OrdinalIgnoreCase);
+            return filePattern.Replace("{streamId}", frame.Metadata.Info.Id, StringComparison.OrdinalIgnoreCase);
         }
 
         private static readonly Regex _patternMatcher = new Regex(@"(\{.+\})", RegexOptions.Compiled);

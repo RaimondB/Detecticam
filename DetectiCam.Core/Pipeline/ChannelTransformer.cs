@@ -15,7 +15,7 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly ILogger _logger;
         private readonly CancellationTokenSource _internalCts;
 
-        private Task? _processorTask = null;
+        //private Task? _processorTask = null;
 
         protected ILogger Logger => _logger;
 
@@ -30,10 +30,10 @@ namespace DetectiCam.Core.VideoCapturing
 
         protected abstract Task<TOutput> ExecuteTransform(TInput input, CancellationToken cancellationToken);
 
-        public Task ExecuteProcessingAsync(CancellationToken stoppingToken)
+        public async Task ExecuteProcessingAsync(CancellationToken stoppingToken)
         {
-            _processorTask = Task.Run(async () =>
-            {
+            //_processorTask = Task.Run(async () =>
+            //{
                 try
                 {
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(
@@ -61,19 +61,20 @@ namespace DetectiCam.Core.VideoCapturing
                     //Complete the channel since nothing to be read anymore
                     _outputWriter.TryComplete();
                 }
-            }, stoppingToken);
+            //}, stoppingToken);
 
-            return _processorTask;
+            //return _processorTask;
         }
 
-        public async Task StopProcessingAsync()
+        public Task StopProcessingAsync()
         {
             _internalCts.Cancel();
-            if (_processorTask != null)
-            {
-                await _processorTask.ConfigureAwait(false);
-                _processorTask = null;
-            }
+            //if (_processorTask != null)
+            //{
+            //    await _processorTask.ConfigureAwait(false);
+            //    _processorTask = null;
+            //}
+            return Task.CompletedTask;
         }
 
         public void Dispose()

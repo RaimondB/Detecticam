@@ -1,7 +1,9 @@
 #nullable enable
+using DetectiCam.Core.Detection;
 using DetectiCam.Core.Pipeline;
 using OpenCvSharp;
 using System;
+using System.Collections.Generic;
 
 namespace DetectiCam.Core.VideoCapturing
 {
@@ -11,6 +13,8 @@ namespace DetectiCam.Core.VideoCapturing
         public DateTime Timestamp { get; }
         public int Index { get; }
         public VideoStreamInfo Info { get; }
+
+        public List<DnnDetectedObject> AnalysisResult { get; } = new List<DnnDetectedObject>();
 
         public VideoFrameContext(DateTime timestamp, int index, VideoStreamInfo info)
         {
@@ -22,7 +26,7 @@ namespace DetectiCam.Core.VideoCapturing
 
     /// <summary> A video frame produced by the Framegrabber.
     ///     This class encapsulates the image and metadata. </summary>
-    public class VideoFrame : ISyncTokenProvider
+    public class VideoFrame : IDisposable, ISyncTokenProvider
     {
         /// <summary> Constructor. </summary>
         /// <param name="image">    The image captured by the camera. </param>
@@ -44,5 +48,11 @@ namespace DetectiCam.Core.VideoCapturing
         public int? TriggerId { get; set; }
 
         public int? SyncToken => TriggerId;
+
+        public void Dispose()
+        {
+            ((IDisposable)Image).Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }

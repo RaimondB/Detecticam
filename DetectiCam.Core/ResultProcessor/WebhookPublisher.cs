@@ -27,7 +27,7 @@ namespace DetectiCam.Core.ResultProcessor
             _clientFactory = clientFactory;
         }
 
-        public async Task ProcessResultAsync(VideoFrame frame, DnnDetectedObject[] results)
+        public async Task ProcessResultAsync(VideoFrame frame, IList<DnnDetectedObject> results)
         {
             if (frame is null) throw new ArgumentNullException(nameof(frame));
             if (results is null) throw new ArgumentNullException(nameof(results));

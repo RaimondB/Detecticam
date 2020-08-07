@@ -1,5 +1,6 @@
 ﻿#nullable enable
 
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -85,6 +86,9 @@ namespace DetectiCam.Core.Detection
             _logger.LogInformation("Detector initalized");
         }
 
+        private const double scaleFactor = 1.0 / 255;
+        private readonly Size scaleSize = new Size(320, 320);
+
         public DnnDetectedObject[][] ClassifyObjects(IEnumerable<Mat> images)
         {
             if (images is null) throw new ArgumentNullException(nameof(images));
@@ -96,7 +100,7 @@ namespace DetectiCam.Core.Detection
             }
 
 
-            using var blob = CvDnn.BlobFromImages(imageList, 1.0 / 255, new Size(320, 320), crop: false);
+            using var blob = CvDnn.BlobFromImages(imageList, scaleFactor, scaleSize, crop: false);
             nnet.SetInput(blob);
 
             //forward model
@@ -145,6 +149,8 @@ namespace DetectiCam.Core.Detection
                 {
                     //dimensions will be 2 for single image analysis and 3 for batch analysis
                     //2 input Prob Dims:3 images: 0 - 2, 1 - 300, 2 - 85
+                    
+                    var probabilitiesRange = new Range(prefix, prob.Size(2) - 1);
 
                     for (var i = 0; i < prob.Size(1); i++)
                     {
@@ -153,9 +159,7 @@ namespace DetectiCam.Core.Detection
                         //Filter out bogus results of > 100% confidence
                         if (confidence > threshold && confidence <= 1.0)
                         {
-                            var colRange = new Range(prefix, prob.Size(2) - 1);
-
-                            var maxProbIndex = prob.FindMaxValueIndexInRange<float>(inputIndex, i, colRange);
+                            var maxProbIndex = prob.FindMaxValueIndexInRange<float>(inputIndex, i, probabilitiesRange);
 
                             if (maxProbIndex == -1)
                             {

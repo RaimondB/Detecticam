@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -11,66 +12,63 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Core.VideoCapturing
 {
-    public class AnalysisResultsChannelConsumer: ChannelConsumer<AnalysisResult>
+    public class AnalyzedVideoFrameChannelConsumer : ChannelConsumer<IList<VideoFrame>>
     {
         private readonly List<IAsyncSingleResultProcessor> _resultProcessors;
 
 
-        public AnalysisResultsChannelConsumer(ChannelReader<AnalysisResult> inputReader,
+        public AnalyzedVideoFrameChannelConsumer(ChannelReader<IList<VideoFrame>> inputReader,
             IEnumerable<IAsyncSingleResultProcessor> resultProcessors,
-            ILogger logger) 
-            : base (inputReader, logger)
+            ILogger logger)
+            : base(inputReader, logger)
         {
             if (resultProcessors is null) throw new ArgumentNullException(nameof(resultProcessors));
 
             _resultProcessors = new List<IAsyncSingleResultProcessor>(resultProcessors);
         }
 
-        protected override async Task ExecuteProcessorAsync(AnalysisResult e, CancellationToken cancellationToken)
+        protected override async Task ExecuteProcessorAsync([DisallowNull] IList<VideoFrame> analyzedFrames, CancellationToken cancellationToken)
         {
-            if (e.TimedOut)
-                Logger.LogWarning("Analysis function timed out.");
-            else if (e.Exception != null)
-                Logger.LogError(e.Exception, "Analysis function threw an exception");
-            else
+            if (analyzedFrames is null) throw new ArgumentNullException(nameof(analyzedFrames));
+
+            var resultTasks = new List<Task>();
+            try
             {
-                var resultTasks = new List<Task>();
 
-                for (int index = 0; index < e.Frames.Count; index++)
+                for (int index = 0; index < analyzedFrames.Count; index++)
                 {
-                    var frame = e.Frames[index];
-                    if (e.Analysis != null)
+                    var frame = analyzedFrames[index];
+                    var analysisResult = frame.Metadata.AnalysisResult;
+                    if (analysisResult != null)
                     {
-                        var analysis = e.Analysis[index];
-
-                        using Mat inputImage = frame.Image;
-
-                        Logger.LogInformation("New result received for {vsid} frame acquired at {timestamp}.",
+                        Logger.LogInformation("New result received for {streamId} frame acquired at {timestamp}.",
                             frame.Metadata.Info.Id, frame.Metadata.Timestamp);
 
-                        if (analysis.Length > 0 && analysis.Any(o => o.Label == "person"))
+                        if (analysisResult.Count > 0 && analysisResult.Any(o => o.Label == "person"))
                         {
                             Logger.LogInformation("Person detected for frame acquired at {timestamp}. Sending to result processors",
                                 frame.Metadata.Timestamp);
 
                             foreach (var processor in _resultProcessors)
                             {
-                                resultTasks.Add(processor.ProcessResultAsync(frame, analysis));
+                                resultTasks.Add(processor.ProcessResultAsync(frame, analysisResult));
                             }
                         }
                     }
                 }
 
-                try
+                await Task.WhenAll(resultTasks).ConfigureAwait(false);
+                resultTasks.Clear();
+                foreach(var frame in analyzedFrames)
                 {
-                    await Task.WhenAll(resultTasks).ConfigureAwait(false);
+                    frame.Dispose();
                 }
+            }
 #pragma warning disable CA1031 // Do not catch general exception types
-                catch (Exception ex)
+            catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
-                {
-                    Logger.LogError(ex, "Exceptions during publication of detection results");
-                }
+            {
+                Logger.LogError(ex, "Exceptions during publication of detection results");
             }
         }
 

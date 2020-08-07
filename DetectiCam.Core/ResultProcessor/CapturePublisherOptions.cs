@@ -11,6 +11,6 @@ namespace DetectiCam.Core.Detection
         [Required]
         public string CaptureRootDir { get; set; } = "/captures";
         [Required]
-        public string CapturePattern { get; set; } = "{vsid}-{ts}.jpg";
+        public string CapturePattern { get; set; } = "{streamId}-{ts}.jpg";
     }
 }

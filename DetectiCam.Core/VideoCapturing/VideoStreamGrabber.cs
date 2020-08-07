@@ -181,7 +181,7 @@ namespace DetectiCam.Core.VideoCapturing
                 finally
                 {
                     // We reach this point by breaking out of the while loop. So we must be stopping.
-                    _logger.LogInformation("Capture has stopped for {vsid}", this.Info.Id);
+                    _logger.LogInformation("Capture has stopped for {streamId}", this.Info.Id);
                     _outputWriter.TryComplete();
                 }
             }, cancellationToken);
@@ -277,20 +277,25 @@ namespace DetectiCam.Core.VideoCapturing
                 Mat imageToPublish = PreprocessImage(frameContext.Frame);
 
                 var ctx = new VideoFrameContext(frameContext.Timestamp, frameContext.FrameCount, this.Info);
+
+#pragma warning disable CA2000 // Dispose objects before losing scope
                 var videoFrame = new VideoFrame(imageToPublish, ctx)
                 {
                     TriggerId = triggerId
                 };
+                //object should not be disposed here, since it is written to a channel for further processing.
+#pragma warning restore CA2000 // Dispose objects before losing scope
 
-                if(_outputWriter.TryWrite(videoFrame))
+                if (_outputWriter.TryWrite(videoFrame))
                 {
-                    _logger.LogDebug("Producer: Published frame {timestamp}; {vsid}; of trigger: {triggerId}",
+                    _logger.LogDebug("Producer: Published frame {timestamp}; {streamId}; of trigger: {triggerId}",
                         videoFrame.Metadata.Timestamp, this.Info.Id, triggerId);
                 }
                 else
                 {
-                    _logger.LogWarning("Producer: Could not publish frame {timestamp}; {vsid}; of trigger: {triggerId}",
+                    _logger.LogWarning("Producer: Could not publish frame {timestamp}; {streamId}; of trigger: {triggerId}",
                         videoFrame.Metadata.Timestamp, this.Info.Id, triggerId);
+                    videoFrame.Dispose();
                 }
             }
             else

@@ -13,12 +13,12 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Core.Pipeline
 {
-    public class DnnDetectorChannelTransformer : ChannelTransformer<IList<VideoFrame>, AnalysisResult>
+    public class DnnDetectorChannelTransformer : ChannelTransformer<IList<VideoFrame>, IList<VideoFrame>>
     {
         private readonly IBatchedDnnDetector _detector;
 
         public DnnDetectorChannelTransformer(IBatchedDnnDetector detector,
-            ChannelReader<IList<VideoFrame>> inputReader, ChannelWriter<AnalysisResult> outputWriter,
+            ChannelReader<IList<VideoFrame>> inputReader, ChannelWriter<IList<VideoFrame>> outputWriter,
             ILogger logger) :
             base(inputReader, outputWriter, logger)
         {
@@ -29,9 +29,9 @@ namespace DetectiCam.Core.Pipeline
         }
 
 
-        protected override Task<AnalysisResult> ExecuteTransform(IList<VideoFrame> frames, CancellationToken cancellationToken)
+        protected override Task<IList<VideoFrame>> ExecuteTransform(IList<VideoFrame> frames, CancellationToken cancellationToken)
         {
-            var output = new AnalysisResult(frames);
+            if (frames is null) throw new ArgumentNullException(nameof(frames));
 
             try
             {
@@ -50,13 +50,17 @@ namespace DetectiCam.Core.Pipeline
 
                     watch.Stop();
                     Logger.LogInformation("Classifiy-objects ms:{classifyDuration}", watch.ElapsedMilliseconds);
+
+                    for (int i = 0; i < result.Length; i++)
+                    {
+                        //Attachs results to the right videoframe
+                        frames[i].Metadata.AnalysisResult.AddRange(result[i]);
+                    }
                 }
                 else
                 {
                     Logger.LogWarning("No images to run detector on");
-                    result = Array.Empty<DnnDetectedObject[]>();
                 }
-                output.Analysis = result;
 
                 Logger.LogDebug("DoAnalysis: done");
             }
@@ -64,11 +68,10 @@ namespace DetectiCam.Core.Pipeline
             catch (Exception ae)
 #pragma warning restore CA1031 // Do not catch general exception types
             {
-                output.Exception = ae;
                 Logger.LogError("DoAnalysis: Exception from analysis task:{message}", ae.Message);
             }
 
-            return Task.FromResult(output);
+            return Task.FromResult(frames);
         }
     }
 }

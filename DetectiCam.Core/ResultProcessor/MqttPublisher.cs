@@ -62,7 +62,7 @@ namespace DetectiCam.Core.ResultProcessor
             }
         }
 
-        public Task ProcessResultAsync(VideoFrame frame, DnnDetectedObject[] results)
+        public Task ProcessResultAsync(VideoFrame frame, IList<DnnDetectedObject> results)
         {
             if (_isEnabled && _client != null)
             {

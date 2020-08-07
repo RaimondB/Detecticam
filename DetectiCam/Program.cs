@@ -33,6 +33,9 @@ namespace CameraWatcher
                 services.AddOptions<CapturePublisherOptions>()
                     .Bind(hostContext.Configuration.GetSection(CapturePublisherOptions.CapturePublisher))
                     .ValidateDataAnnotations();
+                services.AddOptions<VideoStreamsOptions>()
+                    .Bind(hostContext.Configuration.GetSection(VideoStreamsOptions.VideoStreams))
+                    .ValidateDataAnnotations();
 
 
                 var generateConfig = hostContext.Configuration.GetValue<bool>("gen-config");
