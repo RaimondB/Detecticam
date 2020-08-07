@@ -15,7 +15,7 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly List<ChannelReader<T>?> _inputReaders;
         private readonly ChannelWriter<IList<T>> _outputWriter;
         private readonly ILogger _logger;
-        //private Task? _mergeTask = null;
+        private Task? _mergeTask = null;
         private readonly CancellationTokenSource _internalCts;
 
         public SyncedMultiChannelMerger(IEnumerable<ChannelReader<T>> inputReaders, ChannelWriter<IList<T>> outputWriter,
@@ -28,10 +28,10 @@ namespace DetectiCam.Core.VideoCapturing
             //_internalCts.CancelAfter(2000);
         }
 
-        public async Task ExecuteProcessingAsync(CancellationToken stoppingToken)
+        public Task ExecuteProcessingAsync(CancellationToken stoppingToken)
         {
-            //_mergeTask = Task.Run(async () =>
-            //{
+            _mergeTask = Task.Run(async () =>
+            {
                 try
                 {
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(
@@ -92,9 +92,9 @@ namespace DetectiCam.Core.VideoCapturing
                     //Complete the channel since nothing to be read anymore
                     _outputWriter.TryComplete();
                 }
-            //}, stoppingToken);
+            }, stoppingToken);
 
-            //return _mergeTask;
+            return _mergeTask;
         }
 
         private async Task<int?> ReadInputAtIndex(IList<T> results, int index, int? maxToken, CancellationToken cancellationToken)
@@ -125,15 +125,14 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
-        public Task StopProcessingAsync()
+        public async Task StopProcessingAsync()
         {
             _internalCts.Cancel();
-            //if (_mergeTask != null)
-            //{
-            //    await _mergeTask.ConfigureAwait(false);
-            //    _mergeTask = null;
-            //}
-            return Task.CompletedTask;
+            if (_mergeTask != null)
+            {
+                await _mergeTask.ConfigureAwait(false);
+                _mergeTask = null;
+            }
         }
 
         public void Dispose()

@@ -8,6 +8,7 @@ using OpenCvSharp;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -138,13 +139,14 @@ namespace DetectiCam.Core.VideoCapturing
                 {
                     while (!linkedToken.IsCancellationRequested)
                     {
+                        int frameCount = 0;
+
                         try
                         {
                             using var reader = this.InitCapture();
 
                             int delayMs = (int)(500.0 / this.Fps);
                             int errorCount = 0;
-                            int frameCount = 0;
                             bool restart = false;
 
                             while (!linkedToken.IsCancellationRequested && !restart )
@@ -173,7 +175,7 @@ namespace DetectiCam.Core.VideoCapturing
                         catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
                         {
-                            capstureStartedTcs.SetException(ex);
+                            if (frameCount == 1) capstureStartedTcs.SetException(ex);
                             _logger.LogError(ex, "Exception in processes videostream {name}, restarting", this.StreamName);
                         }
                     }
@@ -204,7 +206,7 @@ namespace DetectiCam.Core.VideoCapturing
 
             if (success && !imageBuffer.Empty())
             {
-
+                //Use a tuple to prevent allocation of a full VideoFrame class that also needs to be disposed.
                 var frameContext = (Frame: imageBuffer, Timestamp: startTime, FrameCount: frameCount);
                 _frameBufferWriter.TryWrite(frameContext);
 
@@ -250,10 +252,11 @@ namespace DetectiCam.Core.VideoCapturing
             }
             else
             {
-                Mat cloneImage = new Mat();
-                Cv2.CopyTo(imageBuffer, cloneImage);
+                //Mat cloneImage = new Mat();
+                
+                //Cv2.CopyTo(imageBuffer, cloneImage);
 
-                publishedImage = cloneImage;
+                publishedImage = imageBuffer.Clone();
             }
 
             return publishedImage;
