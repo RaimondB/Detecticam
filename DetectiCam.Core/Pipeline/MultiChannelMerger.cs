@@ -14,7 +14,7 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly List<ChannelReader<T>?> _inputReaders;
         private readonly ChannelWriter<IList<T>> _outputWriter;
         private readonly ILogger _logger;
-        private Task? _mergeTask = null;
+        //private Task? _mergeTask = null;
         private readonly CancellationTokenSource _internalCts;
 
         public MultiChannelMerger(IEnumerable<ChannelReader<T>> inputReaders, ChannelWriter<IList<T>> outputWriter,
@@ -26,12 +26,12 @@ namespace DetectiCam.Core.VideoCapturing
             _internalCts = new CancellationTokenSource();
         }
 
-        public Task ExecuteProcessingAsync(CancellationToken stoppingToken)
-        {
-            _mergeTask = Task.Run(async () =>
-            {
+        public async Task ExecuteProcessingAsync(CancellationToken stoppingToken)
+        { 
+            //_mergeTask = Task.Run(async () =>
+            //{
                 try
-            {
+                {
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(
                         _internalCts.Token, stoppingToken);
                     var linkedToken = cts.Token;
@@ -94,19 +94,20 @@ namespace DetectiCam.Core.VideoCapturing
                     //Complete the channel since nothing to be read anymore
                     _outputWriter.TryComplete();
                 }
-            }, stoppingToken);
+            //}, stoppingToken);
 
-            return _mergeTask;
+            //return _mergeTask;
         }
 
-        public async Task StopProcessingAsync()
+        public Task StopProcessingAsync()
         {
             _internalCts.Cancel();
-            if (_mergeTask != null)
-            {
-                await _mergeTask.ConfigureAwait(false);
-                _mergeTask = null;
-            }
+            //if (_mergeTask != null)
+            //{
+            //    await _mergeTask.ConfigureAwait(false);
+            //    _mergeTask = null;
+            //}
+            return Task.CompletedTask;
         }
 
         public void Dispose()
