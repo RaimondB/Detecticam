@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -34,7 +32,6 @@ namespace DetectiCam.Core.Detection
         private readonly OpenCvSharp.Dnn.Net nnet;
         private readonly Mat[] outs;
         private readonly string[] _outNames;
-        private bool disposedValue;
 
         private const float threshold = 0.5f;       //for confidence 
         private const float nmsThreshold = 0.3f;    //threshold for nms
@@ -89,26 +86,28 @@ namespace DetectiCam.Core.Detection
         private const double scaleFactor = 1.0 / 255;
         private readonly Size scaleSize = new Size(320, 320);
 
-        public DnnDetectedObject[][] ClassifyObjects(IEnumerable<Mat> images)
+        public IList<DnnDetectedObject[]> ClassifyObjects(IEnumerable<Mat> images)
         {
             if (images is null) throw new ArgumentNullException(nameof(images));
-            var imageList = new List<Mat>(images);
 
-            foreach (var image in imageList)
+            //Use a count instead of creating a List to save on an allocation.
+            int imageCount = 0;
+            foreach (var image in images)
             {
                 if (image?.Empty() == true) throw new ArgumentNullException(nameof(images), "One of the images is not initialized");
+                imageCount++;
             }
 
 
-            using var blob = CvDnn.BlobFromImages(imageList, scaleFactor, scaleSize, crop: false);
+            using var blob = CvDnn.BlobFromImages(images, scaleFactor, scaleSize, crop: false);
             nnet.SetInput(blob);
 
             //forward model
             nnet.Forward(outs, _outNames);
 
-            if (imageList.Count == 1)
+            if (imageCount == 1)
             {
-                return ExtractYoloSingleResults(outs, imageList[0], threshold, nmsThreshold);
+                return ExtractYoloSingleResults(outs, images.First(), threshold, nmsThreshold);
             }
             else
             {
@@ -116,25 +115,26 @@ namespace DetectiCam.Core.Detection
             }
         }
 
+        private readonly List<int> _classIds = new List<int>();
+        private readonly List<float> _confidences = new List<float>();
+        private readonly List<float> _probabilities = new List<float>();
+        private readonly List<Rect2d> _boxes = new List<Rect2d>();
 
-        private DnnDetectedObject[][] ExtractYoloBatchedResults(IEnumerable<Mat> output, IEnumerable<Mat> image, float threshold, float nmsThreshold, bool nms = true)
+
+        private IList<DnnDetectedObject[]> ExtractYoloBatchedResults(IEnumerable<Mat> output, IEnumerable<Mat> image, float threshold, float nmsThreshold, bool nms = true)
         {
             var inputImages = image.ToList();
 
             DnnDetectedObject[][] results = new DnnDetectedObject[inputImages.Count][];
 
-            var classIds = new List<int>();
-            var confidences = new List<float>();
-            var probabilities = new List<float>();
-            var boxes = new List<Rect2d>();
 
             for (int inputIndex = 0; inputIndex < inputImages.Count; inputIndex++)
             {
                 //for nms
-                classIds.Clear();
-                confidences.Clear();
-                probabilities.Clear();
-                boxes.Clear();
+                _classIds.Clear();
+                _confidences.Clear();
+                _probabilities.Clear();
+                _boxes.Clear();
 
                 var w = inputImages[inputIndex].Width;
                 var h = inputImages[inputIndex].Height;
@@ -180,37 +180,30 @@ namespace DetectiCam.Core.Detection
                                 float Y = Math.Max(0, centerY - (height / 2.0f));
 
                                 //put data to list for NMSBoxes
-                                classIds.Add(maxProbIndex - prefix);
-                                confidences.Add(confidence);
-                                probabilities.Add(probability);
-                                boxes.Add(new Rect2d(X, Y, width, height));
+                                _classIds.Add(maxProbIndex - prefix);
+                                _confidences.Add(confidence);
+                                _probabilities.Add(probability);
+                                _boxes.Add(new Rect2d(X, Y, width, height));
                             }
                         }
                     }
                 }
 
-                List<DnnDetectedObject> result = OptimizeDetections(threshold, nmsThreshold, nms, classIds, confidences, probabilities, boxes);
-
-                results[inputIndex] = result.ToArray();
+                results[inputIndex] = OptimizeDetections(threshold, nmsThreshold, nms).ToArray();
             }
 
             return results;
         }
 
-        private DnnDetectedObject[][] ExtractYoloSingleResults(IEnumerable<Mat> output, Mat image, float threshold, float nmsThreshold, bool nms = true)
+        private IList<DnnDetectedObject[]> ExtractYoloSingleResults(IEnumerable<Mat> output, Mat image, float threshold, float nmsThreshold, bool nms = true)
         {
             DnnDetectedObject[][] results = new DnnDetectedObject[1][];
 
-            var classIds = new List<int>();
-            var confidences = new List<float>();
-            var probabilities = new List<float>();
-            var boxes = new List<Rect2d>();
-
             //for nms
-            classIds.Clear();
-            confidences.Clear();
-            probabilities.Clear();
-            boxes.Clear();
+            _classIds.Clear();
+            _confidences.Clear();
+            _probabilities.Clear();
+            _boxes.Clear();
 
             var w = image.Width;
             var h = image.Height;
@@ -256,49 +249,49 @@ namespace DetectiCam.Core.Detection
                             float Y = Math.Max(0, centerY - (height / 2.0f));
 
                             //put data to list for NMSBoxes
-                            classIds.Add(maxProbIndex - prefix);
-                            confidences.Add(confidence);
-                            probabilities.Add(probability);
-                            boxes.Add(new Rect2d(X, Y, width, height));
+                            _classIds.Add(maxProbIndex - prefix);
+                            _confidences.Add(confidence);
+                            _probabilities.Add(probability);
+                            _boxes.Add(new Rect2d(X, Y, width, height));
                         }
                     }
                 }
             }
 
-            List<DnnDetectedObject> result = OptimizeDetections(threshold, nmsThreshold, nms, classIds, confidences, probabilities, boxes);
-            results[0] = result.ToArray();
+            results[0] = OptimizeDetections(threshold, nmsThreshold, nms).ToArray();
 
             return results;
         }
 
-        private List<DnnDetectedObject> OptimizeDetections(float threshold, float nmsThreshold, bool nms, List<int> classIds, List<float> confidences, List<float> probabilities, List<Rect2d> boxes)
+        private List<DnnDetectedObject> OptimizeDetections(float threshold, float nmsThreshold, bool nms)
         {
             int[] indices;
 
             if (!nms)
             {
-                indices = Enumerable.Range(0, boxes.Count).ToArray();
+                indices = Enumerable.Range(0, _boxes.Count).ToArray();
             }
             else
             {
                 //using non-maximum suppression to reduce overlapping low confidence box
-                CvDnn.NMSBoxes(boxes, confidences, threshold, nmsThreshold, out indices);
+                CvDnn.NMSBoxes(_boxes, _confidences, threshold, nmsThreshold, out indices);
                 _logger.LogDebug("NMSBoxes drop {overlappingResults} overlapping result.",
-                    confidences.Count - indices.Length);
+                    _confidences.Count - indices.Length);
             }
 
-            var result = new List<DnnDetectedObject>();
+            var result = new List<DnnDetectedObject>(indices.Length);
 
             foreach (var i in indices)
             {
-                var box = boxes[i];
+                var box = _boxes[i];
+                var classIndex = _classIds[i];
 
                 var detection = new DnnDetectedObject()
                 {
-                    Index = classIds[i],
-                    Label = Labels[classIds[i]],
-                    Color = Colors[classIds[i]],
-                    Probability = probabilities[i],
+                    Index = _classIds[i],
+                    Label = Labels[classIndex],
+                    Color = Colors[classIndex],
+                    Probability = _probabilities[i],
                     BoundingBox = box
                 };
                 result.Add(detection);
@@ -307,34 +300,12 @@ namespace DetectiCam.Core.Detection
             return result;
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    if (nnet.IsEnabledDispose && !nnet.IsDisposed)
-                    {
-                        nnet.Dispose();
-                    }
-                }
-
-                disposedValue = true;
-            }
-        }
-
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        ~YoloBatchedDnnDetector()
-        {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: false);
-        }
-
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            if (nnet.IsEnabledDispose && !nnet.IsDisposed)
+            {
+                nnet.Dispose();
+            }
         }
     }
 }

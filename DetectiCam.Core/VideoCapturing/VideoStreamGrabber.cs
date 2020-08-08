@@ -252,11 +252,11 @@ namespace DetectiCam.Core.VideoCapturing
             }
             else
             {
-                //Mat cloneImage = new Mat();
-                
-                //Cv2.CopyTo(imageBuffer, cloneImage);
+                Mat cloneImage = new Mat();
 
-                publishedImage = imageBuffer.Clone();
+                Cv2.CopyTo(imageBuffer, cloneImage);
+
+                publishedImage = cloneImage;
             }
 
             return publishedImage;
@@ -316,7 +316,6 @@ namespace DetectiCam.Core.VideoCapturing
 
             _image1?.Dispose();
             _image2?.Dispose();
-            GC.SuppressFinalize(this);
         }
     }
 }

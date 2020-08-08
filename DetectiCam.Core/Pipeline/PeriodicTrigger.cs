@@ -38,7 +38,6 @@ namespace DetectiCam.Core.Pipeline
         public void Dispose()
         {
             _timer?.Dispose();
-            GC.SuppressFinalize(this);
         }
     }
 }

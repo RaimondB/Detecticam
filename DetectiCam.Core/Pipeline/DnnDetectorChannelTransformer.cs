@@ -39,7 +39,7 @@ namespace DetectiCam.Core.Pipeline
 
                 var images = frames.Where(f => f.Image != null).Select(f => f.Image).ToList();
 
-                DnnDetectedObject[][] result;
+                IList<DnnDetectedObject[]> result;
 
                 if (images.Count > 0)
                 {
@@ -51,10 +51,10 @@ namespace DetectiCam.Core.Pipeline
                     watch.Stop();
                     Logger.LogInformation("Classifiy-objects ms:{classifyDuration}", watch.ElapsedMilliseconds);
 
-                    for (int i = 0; i < result.Length; i++)
+                    for (int i = 0; i < result.Count; i++)
                     {
                         //Attachs results to the right videoframe
-                        frames[i].Metadata.AnalysisResult.AddRange(result[i]);
+                        frames[i].Metadata.AnalysisResult = result[i];
                     }
                 }
                 else

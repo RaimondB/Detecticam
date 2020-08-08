@@ -80,9 +80,9 @@ namespace DetectiCam.Core.ResultProcessor
         {
             //If not enabled, skip this processor.
             if (!_isEnabled) return Task.CompletedTask;
-
             if (frame is null) throw new ArgumentNullException(nameof(frame));
             var results = frame.Metadata.AnalysisResult;
+            if (results is null) throw new InvalidOperationException("An analysis result is expected");
 
             Logger.LogInformation("New result received for frame acquired at {timestamp}. {detectionCount} objects detected",
                 frame.Metadata.Timestamp, results.Count);
@@ -127,7 +127,7 @@ namespace DetectiCam.Core.ResultProcessor
 
         private static string ReplaceVsIdToken(string filePattern, VideoFrame frame)
         {
-            return filePattern.Replace("{streamId}", frame.Metadata.Info.Id, StringComparison.OrdinalIgnoreCase);
+            return filePattern.Replace("{vsid}", frame.Metadata.Info.Id, StringComparison.OrdinalIgnoreCase);
         }
 
         private static readonly Regex _patternMatcher = new Regex(@"(\{.+\})", RegexOptions.Compiled);
@@ -136,7 +136,7 @@ namespace DetectiCam.Core.ResultProcessor
         {
             var ts = frame.Metadata.Timestamp;
 
-            var result = _patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{','}'), CultureInfo.InvariantCulture));
+            var result = _patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{','}'), CultureInfo.CurrentCulture));
 
             return result;
         }

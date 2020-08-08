@@ -63,7 +63,6 @@ namespace DetectiCam.Core.VideoCapturing
         public void Dispose()
         {
             _internalCts?.Dispose();
-            GC.SuppressFinalize(this);
         }
     }
 }

@@ -97,7 +97,7 @@ namespace DetectiCam.Core.VideoCapturing
             //return _mergeTask;
         }
 
-        private async Task<int?> ReadInputAtIndex(IList<T> results, int index, int? maxToken, CancellationToken cancellationToken)
+        private async ValueTask<int?> ReadInputAtIndex(IList<T> results, int index, int? maxToken, CancellationToken cancellationToken)
         {
             var curResult = results[index];
 
@@ -139,7 +139,6 @@ namespace DetectiCam.Core.VideoCapturing
         public void Dispose()
         {
             _internalCts?.Dispose();
-            GC.SuppressFinalize(this);
         }
     }
 }

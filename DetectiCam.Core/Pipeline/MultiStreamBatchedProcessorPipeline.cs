@@ -34,7 +34,6 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly List<VideoStreamGrabber> _streams = new List<VideoStreamGrabber>();
         private readonly VideoStreamsOptions _streamsConfig;
 
-        private bool disposedValue = false;
         private readonly IBatchedDnnDetector _detector;
 
         private TimeSpan _analysisInterval = TimeSpan.FromSeconds(3);
@@ -207,34 +206,17 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    _trigger?.Dispose();
-                    foreach (VideoStreamGrabber vs in _streams)
-                    {
-                        vs?.Dispose();
-                    }
-                    _streams.Clear();
-                    _merger?.Dispose();
-                    _merger = null;
-                    _analyzer?.Dispose();
-                    _analyzer = null;
-                    _resultPublisher?.Dispose();
-                    _resultPublisher = null;
-                }
-
-                disposedValue = true;
-            }
-        }
-
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            _trigger?.Dispose();
+            foreach (VideoStreamGrabber vs in _streams)
+            {
+                vs?.Dispose();
+            }
+            _streams.Clear();
+            _merger?.Dispose();
+            _analyzer?.Dispose();
+            _resultPublisher?.Dispose();
         }
     }
 }
