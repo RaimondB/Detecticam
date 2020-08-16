@@ -24,6 +24,7 @@ namespace DetectiCam.Core.VideoCapturing
             _outputWriter = outputWriter;
             _logger = logger;
             _internalCts = new CancellationTokenSource();
+            //_internalCts.CancelAfter(2000);
         }
 
         public async Task ExecuteProcessingAsync(CancellationToken stoppingToken)
