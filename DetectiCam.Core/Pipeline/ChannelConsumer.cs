@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using static DetectiCam.Core.Common.ExceptionFilterUtility;
 
 namespace DetectiCam.Core.VideoCapturing
 {
@@ -39,9 +40,9 @@ namespace DetectiCam.Core.VideoCapturing
                     await ExecuteProcessorAsync(inputValue, linkedToken).ConfigureAwait(false);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (False(() =>
+                 Logger.LogWarning("Consume operation cancelled")))
             {
-                Logger.LogWarning("Consume operation cancelled");
                 throw;
             }
             finally

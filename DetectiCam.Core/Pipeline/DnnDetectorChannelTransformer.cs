@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using static DetectiCam.Core.Common.ExceptionFilterUtility;
 
 namespace DetectiCam.Core.Pipeline
 {
@@ -64,11 +65,9 @@ namespace DetectiCam.Core.Pipeline
 
                 Logger.LogDebug("DoAnalysis: done");
             }
-#pragma warning disable CA1031 // Do not catch general exception types
-            catch (Exception ae)
-#pragma warning restore CA1031 // Do not catch general exception types
+            catch (Exception ae) when (True(() =>
+                    Logger.LogError("DoAnalysis: Exception from analysis task:{message}", ae.Message)))
             {
-                Logger.LogError("DoAnalysis: Exception from analysis task:{message}", ae.Message);
             }
 
             return new ValueTask<IList<VideoFrame>>(frames);

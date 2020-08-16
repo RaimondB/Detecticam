@@ -1,7 +1,3 @@
-#nullable enable
-// Uncomment this to enable the LogMessage function, which can with debugging timing issues.
-#define TRACE_GRABBER
-
 using DetectiCam.Core.Common;
 using DetectiCam.Core.Detection;
 using DetectiCam.Core.Pipeline;
@@ -75,13 +71,13 @@ namespace DetectiCam.Core.VideoCapturing
 
         private static Channel<IList<VideoFrame>> CreateMultiFrameChannel() =>
             Channel.CreateBounded<IList<VideoFrame>>(
-            new BoundedChannelOptions(1)
-            {
-                AllowSynchronousContinuations = true,
-                FullMode = BoundedChannelFullMode.DropOldest,
-                SingleReader = true,
-                SingleWriter = true
-            });
+                new BoundedChannelOptions(1)
+                {
+                    AllowSynchronousContinuations = true,
+                    FullMode = BoundedChannelFullMode.DropOldest,
+                    SingleReader = true,
+                    SingleWriter = true
+                });
 
         private static Channel<IList<VideoFrame>> CreateOutputChannel() =>
             Channel.CreateUnbounded<IList<VideoFrame>>(

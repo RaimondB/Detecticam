@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using static DetectiCam.Core.Common.ExceptionFilterUtility;
 
 namespace DetectiCam.Core.VideoCapturing
 {
@@ -50,9 +51,9 @@ namespace DetectiCam.Core.VideoCapturing
                         }
                     }
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (False(() =>
+                    Logger.LogWarning("Transform operation cancelled")))
                 {
-                    _logger.LogWarning("Transform operation cancelled");
                     throw;
                 }
                 finally

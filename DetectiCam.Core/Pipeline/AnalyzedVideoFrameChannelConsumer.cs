@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using static DetectiCam.Core.Common.ExceptionFilterUtility;
 
 namespace DetectiCam.Core.VideoCapturing
 {
@@ -59,11 +60,9 @@ namespace DetectiCam.Core.VideoCapturing
 
                 await Task.WhenAll(resultTasks).ConfigureAwait(false);
             }
-#pragma warning disable CA1031 // Do not catch general exception types
-            catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
+            catch (Exception ex) when (True(() => 
+                Logger.LogError(ex, "Exceptions during publication of detection results")))
             {
-                Logger.LogError(ex, "Exceptions during publication of detection results");
             }
             finally
             {
