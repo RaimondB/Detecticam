@@ -15,7 +15,7 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly ILogger _logger;
         private readonly CancellationTokenSource _internalCts;
 
-        private Task? _processorTask = null;
+        private Task? _processorTask;
 
         protected ILogger Logger => _logger;
 

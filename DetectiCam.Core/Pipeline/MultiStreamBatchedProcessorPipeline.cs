@@ -36,7 +36,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         private readonly IBatchedDnnDetector _detector;
 
-        private TimeSpan _analysisInterval = TimeSpan.FromSeconds(3);
+        private TimeSpan _analysisInterval = TimeSpan.FromSeconds(1);
         private PeriodicTrigger? _trigger;
 
         public MultiStreamBatchedProcessorPipeline([DisallowNull] ILogger<MultiStreamBatchedProcessorPipeline> logger,

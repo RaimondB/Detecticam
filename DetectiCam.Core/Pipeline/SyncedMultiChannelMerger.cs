@@ -32,66 +32,78 @@ namespace DetectiCam.Core.VideoCapturing
         {
             //_mergeTask = Task.Run(async () =>
             //{
-                try
+            try
+            {
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(
+                    _internalCts.Token, stoppingToken);
+                var linkedToken = cts.Token;
+
+                while (!linkedToken.IsCancellationRequested)
                 {
-                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(
-                        _internalCts.Token, stoppingToken);
-                    var linkedToken = cts.Token;
+                    T[] results = new T[_inputReaders.Count];
 
-                    while (!linkedToken.IsCancellationRequested)
+                    _logger.LogDebug("Merging frames start batch");
+
+                    int? maxToken = null;
+                    int resultCount = 0;
+
+                    for (var pass = 0; pass <= 1; pass++)
                     {
-                        T[] results = new T[_inputReaders.Count];
-
-                        _logger.LogDebug("Merging frames start batch");
-
-                        int? maxToken = null;
-
-                        for (var pass = 0; pass <= 1; pass++)
+                        resultCount = 0;
+                        for (var index = 0; index < _inputReaders.Count; index++)
                         {
-                            for (var index = 0; index < _inputReaders.Count; index++)
+                            try
                             {
-                                try
-                                {
-                                    maxToken = await ReadInputAtIndex(results, index, maxToken, linkedToken).ConfigureAwait(false);
-                                }
-                                catch (ChannelClosedException)
-                                {
-                                    _logger.LogWarning("Channel closed");
-                                    _inputReaders[index] = null;
-                                }
+                                maxToken = await ReadInputAtIndex(results, index, maxToken, linkedToken).ConfigureAwait(false);
+                                if(maxToken.HasValue) resultCount++;
                             }
-                        }
-
-                        _logger.LogDebug("Merging frames end batch");
-
-                        if (results.All(x => x != null))
-                        {
-                            //Only provide output when we have all results.
-                            if (!_outputWriter.TryWrite(results))
+                            catch (ChannelClosedException)
                             {
-                                _logger.LogWarning("Could not write merged result!");
-                            }
-                            else
-                            {
-                                _logger.LogDebug("New Merged result available for token: {triggerId}", maxToken);
-                            }
-                        }
-                        else
-                        {
-                            if (_inputReaders.All(r => r == null))
-                            {
-                                //Stop when all channels have been closed.
-                                break;
+                                _logger.LogWarning("Channel closed");
+                                _inputReaders[index] = null;
                             }
                         }
                     }
+
+                    _logger.LogDebug("Merging frames end batch:{resultCount}", resultCount);
+
+                    if (resultCount > 0)
+                    {
+                        //Only provide output when we have some results.
+
+                        if (resultCount < _inputReaders.Count)
+                        {
+                            //Filter out empty results when we dont have all
+                            results = results.Where(r => r != null).ToArray();
+                        }
+
+                        if (!_outputWriter.TryWrite(results))
+                        {
+                            _logger.LogWarning("Could not write merged result!");
+                        }
+                        else
+                        {
+                            _logger.LogDebug("New Merged result available for token: {triggerId}", maxToken);
+                        }
+                    }
+                    else
+                    {
+                        //Stop when all channels have been closed.
+                        break;
+                    }
                 }
-                finally
-                {
-                    _logger.LogInformation("Stopping:completing merge channel!");
-                    //Complete the channel since nothing to be read anymore
-                    _outputWriter.TryComplete();
-                }
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error in merger");
+                throw;
+            }
+            finally
+            {
+                _logger.LogInformation("Stopping:completing merge channel!");
+                //Complete the channel since nothing to be read anymore
+                _outputWriter.TryComplete();
+            }
             //}, stoppingToken);
 
             //return _mergeTask;

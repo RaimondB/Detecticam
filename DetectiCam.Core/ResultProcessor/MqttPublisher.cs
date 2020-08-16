@@ -26,7 +26,7 @@ namespace DetectiCam.Core.ResultProcessor
         IAsyncSingleResultProcessor
     {
         private readonly MqttClient? _client;
-        private readonly bool _isEnabled = false;
+        private readonly bool _isEnabled;
         private readonly string? _topicPrefix;
 
         public MqttPublisher(ILogger<MqttPublisher> logger,

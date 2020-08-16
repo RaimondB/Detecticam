@@ -28,6 +28,7 @@ namespace DetectiCam.Core.Pipeline
             _detector.Initialize();
         }
 
+        private readonly Stopwatch _stopwatch = new Stopwatch(); 
 
         protected override ValueTask<IList<VideoFrame>> ExecuteTransform(IList<VideoFrame> frames, CancellationToken cancellationToken)
         {
@@ -43,13 +44,12 @@ namespace DetectiCam.Core.Pipeline
 
                 if (images.Count > 0)
                 {
-                    var watch = new Stopwatch();
-                    watch.Start();
+                    _stopwatch.Restart();
 
                     result = _detector.ClassifyObjects(images);
 
-                    watch.Stop();
-                    Logger.LogInformation("Classifiy-objects ms:{classifyDuration}", watch.ElapsedMilliseconds);
+                    _stopwatch.Stop();
+                    Logger.LogInformation("Classifiy-objects ms:{classifyDuration} for {imageCount} images", _stopwatch.ElapsedMilliseconds, images.Count);
 
                     for (int i = 0; i < result.Count; i++)
                     {

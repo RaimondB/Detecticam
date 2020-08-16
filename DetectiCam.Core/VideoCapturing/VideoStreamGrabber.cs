@@ -1,6 +1,7 @@
 ﻿//#define TRACE_GRABBER
 #nullable enable
 
+using DetectiCam.Core.Detection;
 using DetectiCam.Core.Pipeline;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic;
@@ -314,8 +315,8 @@ namespace DetectiCam.Core.VideoCapturing
 
             _internalCts?.Dispose();
 
-            _image1?.Dispose();
-            _image2?.Dispose();
+            _image1.SafeDispose();
+            _image2.SafeDispose();
         }
     }
 }

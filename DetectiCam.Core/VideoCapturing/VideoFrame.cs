@@ -54,7 +54,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         public void Dispose()
         {
-            Image.Dispose();
+            Image.SafeDispose();
         }
     }
 }

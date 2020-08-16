@@ -86,18 +86,14 @@ namespace DetectiCam.Core.Detection
         private const double scaleFactor = 1.0 / 255;
         private readonly Size scaleSize = new Size(320, 320);
 
-        public IList<DnnDetectedObject[]> ClassifyObjects(IEnumerable<Mat> images)
+        public IList<DnnDetectedObject[]> ClassifyObjects(IList<Mat> images)
         {
             if (images is null) throw new ArgumentNullException(nameof(images));
 
-            //Use a count instead of creating a List to save on an allocation.
-            int imageCount = 0;
             foreach (var image in images)
             {
                 if (image?.Empty() == true) throw new ArgumentNullException(nameof(images), "One of the images is not initialized");
-                imageCount++;
             }
-
 
             using var blob = CvDnn.BlobFromImages(images, scaleFactor, scaleSize, crop: false);
             nnet.SetInput(blob);
@@ -105,9 +101,9 @@ namespace DetectiCam.Core.Detection
             //forward model
             nnet.Forward(outs, _outNames);
 
-            if (imageCount == 1)
+            if (images.Count == 1)
             {
-                return ExtractYoloSingleResults(outs, images.First(), threshold, nmsThreshold);
+                return ExtractYoloSingleResults(outs, images[0], threshold, nmsThreshold);
             }
             else
             {

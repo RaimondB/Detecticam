@@ -48,5 +48,16 @@ namespace DetectiCam.Core.Detection
             }
             return dim1MaxIndex;
         }
+
+        public static void SafeDispose(this Mat? itemToDispose)
+        {
+            if (itemToDispose != null && 
+                itemToDispose.IsEnabledDispose &&
+                !itemToDispose.IsDisposed)
+            {
+                itemToDispose.Dispose();
+            }
+
+        }
     }
 }
