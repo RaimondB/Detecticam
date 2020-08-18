@@ -10,15 +10,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using static DetectiCam.Core.Common.ExceptionFilterUtility;
 
 namespace DetectiCam.Core.Pipeline
 {
-    public class DnnDetectorChannelTransformer : ChannelTransformer<IList<VideoFrame>, AnalysisResult>
+    public class DnnDetectorChannelTransformer : ChannelTransformer<IList<VideoFrame>, IList<VideoFrame>>
     {
         private readonly IBatchedDnnDetector _detector;
 
         public DnnDetectorChannelTransformer(IBatchedDnnDetector detector,
-            ChannelReader<IList<VideoFrame>> inputReader, ChannelWriter<AnalysisResult> outputWriter,
+            ChannelReader<IList<VideoFrame>> inputReader, ChannelWriter<IList<VideoFrame>> outputWriter,
             ILogger logger) :
             base(inputReader, outputWriter, logger)
         {
@@ -26,14 +27,13 @@ namespace DetectiCam.Core.Pipeline
 
             _detector = detector;
             _detector.Initialize();
-            
-            SetTransformer(this.DoAnalyzeFrames);
         }
 
+        private readonly Stopwatch _stopwatch = new Stopwatch(); 
 
-        protected Task<AnalysisResult> DoAnalyzeFrames(IList<VideoFrame> frames, CancellationToken cancellationToken)
+        protected override ValueTask<IList<VideoFrame>> ExecuteTransform(IList<VideoFrame> frames, CancellationToken cancellationToken)
         {
-            var output = new AnalysisResult(frames);
+            if (frames is null) throw new ArgumentNullException(nameof(frames));
 
             try
             {
@@ -41,36 +41,36 @@ namespace DetectiCam.Core.Pipeline
 
                 var images = frames.Where(f => f.Image != null).Select(f => f.Image).ToList();
 
-                DnnDetectedObject[][] result;
+                IList<DnnDetectedObject[]> result;
 
                 if (images.Count > 0)
                 {
-                    var watch = new Stopwatch();
-                    watch.Start();
+                    _stopwatch.Restart();
 
                     result = _detector.ClassifyObjects(images);
 
-                    watch.Stop();
-                    Logger.LogInformation($"Classifiy-objects ms:{watch.ElapsedMilliseconds}");
+                    _stopwatch.Stop();
+                    Logger.LogInformation("Classifiy-objects ms:{classifyDuration} for {imageCount} images", _stopwatch.ElapsedMilliseconds, images.Count);
+
+                    for (int i = 0; i < result.Count; i++)
+                    {
+                        //Attachs results to the right videoframe
+                        frames[i].Metadata.AnalysisResult = result[i];
+                    }
                 }
                 else
                 {
                     Logger.LogWarning("No images to run detector on");
-                    result = Array.Empty<DnnDetectedObject[]>();
                 }
-                output.Analysis = result;
 
                 Logger.LogDebug("DoAnalysis: done");
             }
-#pragma warning disable CA1031 // Do not catch general exception types
-            catch (Exception ae)
-#pragma warning restore CA1031 // Do not catch general exception types
+            catch (Exception ae) when (True(() =>
+                    Logger.LogError("DoAnalysis: Exception from analysis task:{message}", ae.Message)))
             {
-                output.Exception = ae;
-                Logger.LogError("DoAnalysis: Exception from analysis task:{message}", ae.Message);
             }
 
-            return Task.FromResult(output);
+            return new ValueTask<IList<VideoFrame>>(frames);
         }
     }
 }

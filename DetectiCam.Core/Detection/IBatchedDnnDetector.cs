@@ -8,7 +8,7 @@ namespace DetectiCam.Core.Detection
 {
     public interface IBatchedDnnDetector : IDisposable
     {
-        public DnnDetectedObject[][] ClassifyObjects(IEnumerable<Mat> image);
+        public IList<DnnDetectedObject[]> ClassifyObjects(IList<Mat> image);
         public void Initialize();
     }
 }

@@ -1,4 +1,5 @@
-﻿using DetectiCam.Core.Detection;
+﻿using DetectiCam.Core.Common;
+using DetectiCam.Core.Detection;
 using DetectiCam.Core.VideoCapturing;
 using DetectiCam.Core.Visualization;
 using Microsoft.Extensions.Configuration;
@@ -19,49 +20,36 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Core.ResultProcessor
 {
-    public class CapturePublisher : IAsyncSingleResultProcessor
+    public class CapturePublisher : ConfigurableService<CapturePublisher, CapturePublisherOptions>, IAsyncSingleResultProcessor
     {
-        private readonly string? _captureRootPath;
-        private readonly ILogger _logger;
-        private readonly CapturePublisherOptions _options;
+        private readonly string _captureRootPath;
         private readonly bool _isEnabled = true;
 
         public CapturePublisher(ILogger<CapturePublisher> logger, IConfiguration config,
-            IOptions<CapturePublisherOptions> options)
+            IOptions<CapturePublisherOptions> options) :
+            base(logger, options)
         {
-            if (logger is null) throw new ArgumentNullException(nameof(logger));
             if (config is null) throw new ArgumentNullException(nameof(config));
-            if (options is null) throw new ArgumentNullException(nameof(options));
 
-            _logger = logger;
+            _isEnabled = Options.Enabled;
+            _captureRootPath = Options.CaptureRootDir;
 
             var path = config.GetSection("capture-path").Get<string>();
             if (!String.IsNullOrEmpty(path))
             {
-                _logger.LogWarning("You are using a depreacted way to configure the Capture Publisher. Switch to \"capture-publisher\" section instead.");
+                Logger.LogWarning("You are using a depreacted way to configure the Capture Publisher. Switch to \"capture-publisher\" section instead.");
                 _captureRootPath = Path.GetFullPath(path);
                 EnsureDirectoryPath(_captureRootPath);
             }
-
-            try
+            else
             {
-                _options = options.Value;
-                _isEnabled = _options.Enabled;
-
                 if (_isEnabled)
                 {
-                    if (!String.IsNullOrEmpty(_options.CaptureRootDir))
+                    if (!String.IsNullOrEmpty(Options.CaptureRootDir))
                     {
-                        _captureRootPath = _options.CaptureRootDir;
+                        _captureRootPath = Options.CaptureRootDir;
                         EnsureDirectoryPath(_captureRootPath);
                     }
-                }
-            }
-            catch (OptionsValidationException ex)
-            {
-                foreach (var failure in ex.Failures)
-                {
-                    _logger.LogError(failure);
                 }
             }
         }
@@ -79,7 +67,7 @@ namespace DetectiCam.Core.ResultProcessor
             }
             catch (IOException ioex)
             {
-                _logger.LogError(ioex, $"Could not create directory path for filepath:{path}");
+                Logger.LogError(ioex, "Could not create directory path for filepath:{capturepath}", path);
             }
         }
 
@@ -88,15 +76,16 @@ namespace DetectiCam.Core.ResultProcessor
             return $"{metaData.Timestamp:yyyyMMddTHHmmss}";
         }
 
-        public Task ProcessResultAsync(VideoFrame frame, DnnDetectedObject[] results)
+        public Task ProcessResultAsync(VideoFrame frame)
         {
-            //If the output path is not set, skip this processor.
-            if (String.IsNullOrEmpty(_captureRootPath)) return Task.CompletedTask;
-
+            //If not enabled, skip this processor.
+            if (!_isEnabled) return Task.CompletedTask;
             if (frame is null) throw new ArgumentNullException(nameof(frame));
-            if (results is null) throw new ArgumentNullException(nameof(results));
+            var results = frame.Metadata.AnalysisResult;
+            if (results is null) throw new InvalidOperationException("An analysis result is expected");
 
-            _logger.LogInformation($"New result received for frame acquired at {frame.Metadata.Timestamp}. {results.Length} objects detected");
+            Logger.LogInformation("New result received for frame acquired at {timestamp}. {detectionCount} objects detected",
+                frame.Metadata.Timestamp, results.Count);
 
             var labelStats = from r in results
                               group r by r.Label into g
@@ -104,10 +93,10 @@ namespace DetectiCam.Core.ResultProcessor
 
             var stats = String.Join("; ", labelStats);
          
-            _logger.LogInformation($"Detected: {stats}");
+            Logger.LogInformation("Detected: {detectionstats}", stats);
 
 
-            var filename = _options.CapturePattern;
+            var filename = Options.CapturePattern;
             filename = ReplaceTsToken(filename, frame);
             filename = ReplaceVsIdToken(filename, frame);
             filename = ReplaceDateTimeTokens(filename, frame);
@@ -120,11 +109,11 @@ namespace DetectiCam.Core.ResultProcessor
 
             if (Cv2.ImWrite(filePath, result))
             {
-                _logger.LogInformation("Interesting Detection Saved: {filename}", filename);
+                Logger.LogInformation("Interesting Detection Saved: {filename}", filename);
             }
             else
             {
-                _logger.LogError("Error during write of file {filePath}", filePath);
+                Logger.LogError("Error during write of file {filePath}", filePath);
             }
             return Task.CompletedTask;
         }
@@ -141,13 +130,13 @@ namespace DetectiCam.Core.ResultProcessor
             return filePattern.Replace("{vsid}", frame.Metadata.Info.Id, StringComparison.OrdinalIgnoreCase);
         }
 
+        private static readonly Regex _patternMatcher = new Regex(@"(\{.+\})", RegexOptions.Compiled);
+
         private static string ReplaceDateTimeTokens(string filePattern, VideoFrame frame)
         {
             var ts = frame.Metadata.Timestamp;
 
-            Regex patternMatcher = new Regex(@"(\{.+\})");
-
-            var result = patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{','}'), CultureInfo.InvariantCulture));
+            var result = _patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{','}'), CultureInfo.CurrentCulture));
 
             return result;
         }

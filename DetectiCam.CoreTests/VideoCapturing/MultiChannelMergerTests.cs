@@ -83,7 +83,6 @@ namespace DetectiCam.Core.VideoCapturing.Tests
         }
 
         [TestMethod()]
-        [ExpectedException(typeof(OperationCanceledException))]
         public async Task StopProcessingAsyncTest()
         {
             var task = _sut.ExecuteProcessingAsync(_cts.Token);

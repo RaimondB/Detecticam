@@ -15,9 +15,8 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly List<ChannelReader<T>?> _inputReaders;
         private readonly ChannelWriter<IList<T>> _outputWriter;
         private readonly ILogger _logger;
-        private Task? _mergeTask = null;
+        //private Task? _mergeTask = null;
         private readonly CancellationTokenSource _internalCts;
-        private bool disposedValue;
 
         public SyncedMultiChannelMerger(IEnumerable<ChannelReader<T>> inputReaders, ChannelWriter<IList<T>> outputWriter,
             ILogger logger)
@@ -29,78 +28,88 @@ namespace DetectiCam.Core.VideoCapturing
             //_internalCts.CancelAfter(2000);
         }
 
-        public Task ExecuteProcessingAsync(CancellationToken stoppingToken)
+        public async Task ExecuteProcessingAsync(CancellationToken stoppingToken)
         {
-            _mergeTask = Task.Run(async () =>
+            //_mergeTask = Task.Run(async () =>
+            //{
+            try
             {
-                try
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(
+                    _internalCts.Token, stoppingToken);
+                var linkedToken = cts.Token;
+
+                while (!linkedToken.IsCancellationRequested)
                 {
-                    using var cts = CancellationTokenSource.CreateLinkedTokenSource(
-                        _internalCts.Token, stoppingToken);
-                    var linkedToken = cts.Token;
+                    T[] results = new T[_inputReaders.Count];
 
-                    while (true)
+                    _logger.LogDebug("Merging frames start batch");
+
+                    int? maxToken = null;
+                    int resultCount = 0;
+
+                    for (var pass = 0; pass <= 1; pass++)
                     {
-
-                        linkedToken.ThrowIfCancellationRequested();
-                        T[] results = new T[_inputReaders.Count];
-
-                        _logger.LogDebug("Merging frames start batch");
-
-                        int? maxToken = null;
-
-                        for (var pass = 0; pass <= 1; pass++)
+                        resultCount = 0;
+                        for (var index = 0; index < _inputReaders.Count; index++)
                         {
-                            for (var index = 0; index < _inputReaders.Count; index++)
+                            try
                             {
-                                try
-                                {
-                                    maxToken = await ReadInputAtIndex(results, index, maxToken, linkedToken).ConfigureAwait(false);
-                                }
-                                catch (ChannelClosedException)
-                                {
-                                    _logger.LogWarning("Channel closed");
-                                    _inputReaders[index] = null;
-                                }
+                                maxToken = await ReadInputAtIndex(results, index, maxToken, linkedToken).ConfigureAwait(false);
+                                if(maxToken.HasValue) resultCount++;
                             }
-                        }
-
-                        _logger.LogDebug("Merging frames end batch");
-
-                        if (results.All(x => x != null))
-                        {
-                            //Only provide output when we have all results.
-                            if (!_outputWriter.TryWrite(results))
+                            catch (ChannelClosedException)
                             {
-                                _logger.LogWarning("Could not write merged result!");
-                            }
-                            else
-                            {
-                                _logger.LogDebug("New Merged result available for token: {triggerId}", maxToken);
-                            }
-                        }
-                        else
-                        {
-                            if (_inputReaders.All(r => r == null))
-                            {
-                                //Stop when all channels have been closed.
-                                break;
+                                _logger.LogWarning("Channel closed");
+                                _inputReaders[index] = null;
                             }
                         }
                     }
-                }
-                finally
-                {
-                    _logger.LogInformation("Stopping:completing merge channel!");
-                    //Complete the channel since nothing to be read anymore
-                    _outputWriter.TryComplete();
-                }
-            }, stoppingToken);
 
-            return _mergeTask;
+                    _logger.LogDebug("Merging frames end batch:{resultCount}", resultCount);
+
+                    if (resultCount > 0)
+                    {
+                        //Only provide output when we have some results.
+
+                        if (resultCount < _inputReaders.Count)
+                        {
+                            //Filter out empty results when we dont have all
+                            results = results.Where(r => r != null).ToArray();
+                        }
+
+                        if (!_outputWriter.TryWrite(results))
+                        {
+                            _logger.LogWarning("Could not write merged result!");
+                        }
+                        else
+                        {
+                            _logger.LogDebug("New Merged result available for token: {triggerId}", maxToken);
+                        }
+                    }
+                    else
+                    {
+                        //Stop when all channels have been closed.
+                        break;
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error in merger");
+                throw;
+            }
+            finally
+            {
+                _logger.LogInformation("Stopping:completing merge channel!");
+                //Complete the channel since nothing to be read anymore
+                _outputWriter.TryComplete();
+            }
+            //}, stoppingToken);
+
+            //return _mergeTask;
         }
 
-        private async Task<int?> ReadInputAtIndex(IList<T> results, int index, int? maxToken, CancellationToken cancellationToken)
+        private async ValueTask<int?> ReadInputAtIndex(IList<T> results, int index, int? maxToken, CancellationToken cancellationToken)
         {
             var curResult = results[index];
 
@@ -128,45 +137,20 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
-        public async Task StopProcessingAsync()
+        public Task StopProcessingAsync()
         {
             _internalCts.Cancel();
-            if (_mergeTask != null)
-            {
-                await _mergeTask.ConfigureAwait(false);
-                _mergeTask = null;
-            }
+            //if (_mergeTask != null)
+            //{
+            //    await _mergeTask.ConfigureAwait(false);
+            //    _mergeTask = null;
+            //}
+            return Task.CompletedTask;
         }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    _internalCts?.Dispose();
-
-                    // TODO: dispose managed state (managed objects)
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
-                disposedValue = true;
-            }
-        }
-
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~MultiChannelMerger()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
 
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            _internalCts?.Dispose();
         }
     }
 }

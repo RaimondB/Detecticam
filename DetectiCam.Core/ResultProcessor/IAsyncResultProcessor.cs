@@ -11,7 +11,7 @@ namespace DetectiCam.Core.ResultProcessor
 {
     public interface IAsyncSingleResultProcessor
     {
-        Task ProcessResultAsync(VideoFrame frame, DnnDetectedObject[] results);
+        Task ProcessResultAsync(VideoFrame frame);
         Task StopProcessingAsync(CancellationToken cancellationToken);
     }
 }

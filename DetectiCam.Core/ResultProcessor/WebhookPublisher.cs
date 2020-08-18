@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Core.ResultProcessor
 {
-    public class WebhookPublisher : IAsyncSingleResultProcessor
+    public class WebhookPublisher :  IAsyncSingleResultProcessor
     {
         private readonly ILogger _logger;
         private readonly IHttpClientFactory _clientFactory;
@@ -27,10 +27,9 @@ namespace DetectiCam.Core.ResultProcessor
             _clientFactory = clientFactory;
         }
 
-        public async Task ProcessResultAsync(VideoFrame frame, DnnDetectedObject[] results)
+        public async Task ProcessResultAsync(VideoFrame frame)
         {
             if (frame is null) throw new ArgumentNullException(nameof(frame));
-            if (results is null) throw new ArgumentNullException(nameof(results));
 
             var url = frame.Metadata.Info.CallbackUrl;
             if (url != null)

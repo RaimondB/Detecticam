@@ -35,7 +35,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         public Uri? CallbackUrl { get; set; }
 
-        private RotateFlags? _rotateFlags = null;
+        private RotateFlags? _rotateFlags;
 
         public RotateFlags? RotateFlags
         {

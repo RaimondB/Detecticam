@@ -79,13 +79,13 @@ This can be configured by the following settings in the appsettings.json:
 "capture-publisher": {
     "enabled": true,
     "captureRootDir" : "/captures",
-    "capturePattern" : "{yyyy-MM-dd}/{vsid}-{ts}.jpg"
+    "capturePattern" : "{yyyy-MM-dd}/{streamId}-{ts}.jpg"
 }
 ```
 it is now possible to configure the way the captures will be saved.
 There are two special tokens:
 
-* *{vsid}* is the id of the videostream
+* *{streamId}* is the id of the videostream
 * *{ts}* is the sortable timestamp
 
 Additionally, you can provide [all normal timestamp formatters](https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) between {} . This way it is also now possible to dynamically generate subdirectories so that it is easy to group files by date.

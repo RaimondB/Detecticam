@@ -1,4 +1,5 @@
-﻿using DetectiCam.Core.Detection;
+﻿using DetectiCam.Core.Common;
+using DetectiCam.Core.Detection;
 using DetectiCam.Core.VideoCapturing;
 using DetectiCam.Core.Visualization;
 using Microsoft.Extensions.Configuration;
@@ -18,71 +19,54 @@ using System.Threading.Tasks;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 
+
 namespace DetectiCam.Core.ResultProcessor
 {
-    public class MqttPublisher : IAsyncSingleResultProcessor
+    public class MqttPublisher : ConfigurableService<MqttPublisher, MqttPublisherOptions>, 
+        IAsyncSingleResultProcessor
     {
-        private readonly ILogger _logger;
         private readonly MqttClient? _client;
-        private readonly MqttPublisherOptions? _config;
-        private readonly bool _isEnabled = false;
+        private readonly bool _isEnabled;
         private readonly string? _topicPrefix;
 
-        public MqttPublisher(   IOptions<MqttPublisherOptions> config,
-                                ILogger<MqttPublisher> logger)
+        public MqttPublisher(ILogger<MqttPublisher> logger,
+                             IOptions<MqttPublisherOptions> options) :
+            base(logger, options)
         {
-            if (config is null) throw new ArgumentNullException(nameof(config));
-            if (logger is null) throw new ArgumentNullException(nameof(logger));
+            _isEnabled = Options.Enabled;
 
-            _logger = logger;
-
-            try
+            if (_isEnabled)
             {
-                _config = config.Value;
-                _isEnabled = _config.Enabled;
-
-                if (_isEnabled)
+                if (!String.IsNullOrEmpty(Options.TopicPrefix))
                 {
-                    if (!String.IsNullOrEmpty(_config.TopicPrefix))
+                    _topicPrefix = Options.TopicPrefix;
+                    if (!Options.TopicPrefix.EndsWith("/", StringComparison.OrdinalIgnoreCase))
                     {
-                        _topicPrefix = _config.TopicPrefix;
-                        if (!_config.TopicPrefix.EndsWith("/", StringComparison.OrdinalIgnoreCase))
-                        {
-                            _topicPrefix += "/";
-                        }
+                        _topicPrefix += "/";
                     }
-                    else
-                    {
-                        _topicPrefix = "";
-                    }
-
-                    // create client instance 
-                    _client = new MqttClient(_config.Server, _config.Port, false,
-                        MqttSslProtocols.None,
-                        null, null);
-
-                    string clientId = String.IsNullOrEmpty(_config.ClientId) ? Guid.NewGuid().ToString() :
-                        _config.ClientId;
-
-                    _client.Connect(clientId, _config.Username, _config.Password);
                 }
-            }
-            catch (OptionsValidationException ex)
-            {
-                foreach (var failure in ex.Failures)
+                else
                 {
-                    _logger.LogError(failure);
+                    _topicPrefix = "";
                 }
+
+                // create client instance 
+                _client = new MqttClient(Options.Server, Options.Port, false,
+                    MqttSslProtocols.None,
+                    null, null);
+
+                string clientId = String.IsNullOrEmpty(Options.ClientId) ? Guid.NewGuid().ToString() :
+                    Options.ClientId;
+
+                _client.Connect(clientId, Options.Username, Options.Password);
             }
         }
 
-        public Task ProcessResultAsync(VideoFrame frame, DnnDetectedObject[] results)
+        public Task ProcessResultAsync(VideoFrame frame)
         {
             if (_isEnabled && _client != null)
             {
-
                 if (frame is null) throw new ArgumentNullException(nameof(frame));
-                if (results is null) throw new ArgumentNullException(nameof(results));
 
                 string strValue = "{ \"detection\" : true }";
                 string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/state";

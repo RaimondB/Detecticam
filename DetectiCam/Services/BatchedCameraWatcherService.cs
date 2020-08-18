@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using DetectiCam.Core.VideoCapturing;
 using DetectiCam.Core.Visualization;
 using DetectiCam.Core.Detection;
+using static DetectiCam.Core.Common.ExceptionFilterUtility;
 
 namespace CameraWatcher
 {
@@ -43,20 +44,27 @@ namespace CameraWatcher
             _pipeline = pipeline;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.Run(async () =>
         {
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            try
+            {
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
-            // Tell grabber when to call API.
-            // See also TriggerAnalysisOnPredicate
-            _pipeline.TriggerAnalysisOnInterval(TimeSpan.FromMilliseconds(3000));
+                // Tell grabber when to call API.
+                // See also TriggerAnalysisOnPredicate
+                _pipeline.TriggerAnalysisOnInterval(TimeSpan.FromMilliseconds(3000));
 
-            var pipelineTask = _pipeline.StartProcessingAll(stoppingToken);
-            await pipelineTask.ConfigureAwait(false);
+                var pipelineTask = _pipeline.StartProcessingAll(stoppingToken);
+                await pipelineTask.ConfigureAwait(false);
 
-            // When the pipeline is done, we can exit the application
-            _appLifetime.StopApplication();
-        }
+                // When the pipeline is done, we can exit the application
+                _appLifetime.StopApplication();
+            }
+            catch (Exception ex) when (False(() => _logger.LogCritical(ex, "Fatal error")))
+            {
+                throw;
+            }
+        }, stoppingToken);
 
         public override async Task StopAsync(CancellationToken cancellationToken)
         {

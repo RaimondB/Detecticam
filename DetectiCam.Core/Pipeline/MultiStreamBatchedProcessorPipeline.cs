@@ -1,18 +1,17 @@
-#nullable enable
-// Uncomment this to enable the LogMessage function, which can with debugging timing issues.
-#define TRACE_GRABBER
-
+using DetectiCam.Core.Common;
 using DetectiCam.Core.Detection;
 using DetectiCam.Core.Pipeline;
 using DetectiCam.Core.ResultProcessor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -24,39 +23,33 @@ namespace DetectiCam.Core.VideoCapturing
     /// <summary> A frame grabber. </summary>
     /// <typeparam name="TOutput"> Type of the analysis result. This is the type that
     ///     the AnalysisFunction will return, when it calls some API on a video frame. </typeparam>
-    public class MultiStreamBatchedProcessorPipeline : IDisposable
+    public class MultiStreamBatchedProcessorPipeline : ConfigurableService<MultiStreamBatchedProcessorPipeline, VideoStreamsOptions>, IDisposable
     {
         private readonly List<IAsyncSingleResultProcessor> _resultProcessors;
 
         private readonly List<VideoStreamGrabber> _streams = new List<VideoStreamGrabber>();
-        private readonly VideoStreamsConfigCollection _streamsConfig;
+        private readonly VideoStreamsOptions _streamsConfig;
 
-        private bool disposedValue = false;
-        private readonly ILogger _logger;
-        private readonly IConfiguration _configuration;
         private readonly IBatchedDnnDetector _detector;
 
-        private TimeSpan _analysisInterval = TimeSpan.FromSeconds(3);
+        private TimeSpan _analysisInterval = TimeSpan.FromSeconds(1);
         private PeriodicTrigger? _trigger;
 
         public MultiStreamBatchedProcessorPipeline([DisallowNull] ILogger<MultiStreamBatchedProcessorPipeline> logger,
-                                              [DisallowNull] IConfiguration configuration,
+                                              IOptions<VideoStreamsOptions> options,
                                               IBatchedDnnDetector detector,
-                                              IEnumerable<IAsyncSingleResultProcessor> resultProcessors)
+                                              IEnumerable<IAsyncSingleResultProcessor> resultProcessors):
+            base(logger, options)
         {
-            if (logger is null) throw new ArgumentNullException(nameof(logger));
-            if (configuration is null) throw new ArgumentNullException(nameof(configuration));
             if (resultProcessors is null) throw new ArgumentNullException(nameof(resultProcessors));
             if (detector is null) throw new ArgumentNullException(nameof(detector));
 
-            _logger = logger;
-            _configuration = configuration;
             _detector = detector;
             _resultProcessors = new List<IAsyncSingleResultProcessor>(resultProcessors);
 
-            _streamsConfig = _configuration.GetSection(VideoStreamsConfigCollection.VideoStreamsConfigKey).Get<VideoStreamsConfigCollection>();
+            _streamsConfig = Options;
 
-            _logger.LogInformation("Loaded configuration for {numberOfStreams} streams:{streamIds}", 
+            Logger.LogInformation("Loaded configuration for {numberOfStreams} streams:{streamIds}", 
                 _streamsConfig.Count,
                 String.Join(",", _streamsConfig.Select(s => s.Id)));
         }
@@ -70,7 +63,7 @@ namespace DetectiCam.Core.VideoCapturing
             Channel.CreateBounded<VideoFrame>(
                 new BoundedChannelOptions(5)
                 {
-                    AllowSynchronousContinuations = false,
+                    AllowSynchronousContinuations = true,
                     FullMode = BoundedChannelFullMode.DropOldest,
                     SingleReader = true,
                     SingleWriter = true
@@ -78,43 +71,50 @@ namespace DetectiCam.Core.VideoCapturing
 
         private static Channel<IList<VideoFrame>> CreateMultiFrameChannel() =>
             Channel.CreateBounded<IList<VideoFrame>>(
-            new BoundedChannelOptions(1)
-            {
-                AllowSynchronousContinuations = false,
-                FullMode = BoundedChannelFullMode.DropOldest,
-                SingleReader = true,
-                SingleWriter = true
-            });
+                new BoundedChannelOptions(1)
+                {
+                    AllowSynchronousContinuations = true,
+                    FullMode = BoundedChannelFullMode.DropOldest,
+                    SingleReader = true,
+                    SingleWriter = true
+                });
 
-        private static Channel<AnalysisResult> CreateOutputChannel() =>
-            Channel.CreateUnbounded<AnalysisResult>(
+        private static Channel<IList<VideoFrame>> CreateOutputChannel() =>
+            Channel.CreateUnbounded<IList<VideoFrame>>(
             new UnboundedChannelOptions()
             {
-                AllowSynchronousContinuations = false,
+                AllowSynchronousContinuations = true,
                 SingleReader = true,
                 SingleWriter = true
             });
 
         private readonly List<Channel<VideoFrame>> _capturingChannels = new List<Channel<VideoFrame>>();
 
-        public void StartCapturingAllStreamsAsync(CancellationToken cancellationToken)
+        public async Task StartCapturingAllStreamsAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Start Capturing All Streams");
+            Logger.LogInformation("Start Capturing All Streams");
+            List<Task> streamsStartedTasks = new List<Task>();
+
             foreach (var stream in _streams)
             {
-                _logger.LogInformation("Start Capturing: {streamId}", stream.Info.Id);
-                stream.StartCapturing(_analysisInterval, cancellationToken);
+                Logger.LogInformation("Start Capturing: {streamId}", stream.Info.Id);
+                var captureStartedTask = stream.StartCapturing(cancellationToken);
+                Logger.LogInformation("Capturing Started: {streamId}", stream.Info.Id);
+                streamsStartedTasks.Add(captureStartedTask);
             }
+
+            await Task.WhenAll(streamsStartedTasks).ConfigureAwait(false);
+            streamsStartedTasks.Clear();
         }
 
         private void CreateCapturingChannel(VideoStreamInfo streamInfo)
         {
-            _logger.LogInformation("CreateCapturingChannel: {streamId}", streamInfo.Id);
+            Logger.LogDebug("CreateCapturingChannel: {streamId}", streamInfo.Id);
 
             var newChannel = CreateCapturingChannel();
             _capturingChannels.Add(newChannel);
 
-            VideoStreamGrabber vs = new VideoStreamGrabber(_logger, streamInfo, newChannel);
+            VideoStreamGrabber vs = new VideoStreamGrabber(Logger, streamInfo, newChannel);
 
             _streams.Add(vs);
 
@@ -122,7 +122,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         private void CreateCapturingChannels()
         {
-            _logger.LogDebug("CreateCapturingChannels");
+            Logger.LogDebug("CreateCapturingChannels");
             foreach (var si in _streamsConfig)
             {
                 CreateCapturingChannel(si);
@@ -131,11 +131,11 @@ namespace DetectiCam.Core.VideoCapturing
 
         private SyncedMultiChannelMerger<VideoFrame>? _merger;
         private DnnDetectorChannelTransformer? _analyzer;
-        private AnalysisResultsChannelConsumer? _resultPublisher;
+        private AnalyzedVideoFrameChannelConsumer? _resultPublisher;
 
-        public Task StartProcessingAll(CancellationToken cancellationToken)
+        public async Task StartProcessingAll(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Create processing pipeline");
+            Logger.LogInformation("Create processing pipeline");
             CreateCapturingChannels();
             var analysisChannel = CreateMultiFrameChannel();
             var outputChannel = CreateOutputChannel();
@@ -143,31 +143,32 @@ namespace DetectiCam.Core.VideoCapturing
             var inputReaders = _capturingChannels.Select(c => c.Reader).ToList();
 
             _merger = new SyncedMultiChannelMerger<VideoFrame>(
-                inputReaders, analysisChannel.Writer, _logger);
+                inputReaders, analysisChannel.Writer, Logger);
             var mergerTask = _merger.ExecuteProcessingAsync(cancellationToken);
 
             _analyzer = new DnnDetectorChannelTransformer(_detector,
-                analysisChannel.Reader, outputChannel.Writer, _logger);
+                analysisChannel.Reader, outputChannel.Writer, Logger);
             var analyzerTask = _analyzer.ExecuteProcessingAsync(cancellationToken);
 
-            _resultPublisher = new AnalysisResultsChannelConsumer(
-                outputChannel.Reader, _resultProcessors, _logger);
+            _resultPublisher = new AnalyzedVideoFrameChannelConsumer(
+                outputChannel.Reader, _resultProcessors, Logger);
             var resultPublisherTask = _resultPublisher.ExecuteProcessingAsync(cancellationToken);
 
-            _logger.LogInformation("Start processing pipeline");
-            StartCapturingAllStreamsAsync(cancellationToken);
+            Logger.LogInformation("Start processing pipeline");
+            await StartCapturingAllStreamsAsync(cancellationToken).ConfigureAwait(false);
 
-            _trigger = new PeriodicTrigger(_logger, _streams);
+            //Only start the trigger when we know that all capturing streams have started.
+            _trigger = new PeriodicTrigger(Logger, _streams);
             _trigger.Start(TimeSpan.FromSeconds(_streams.Count), _analysisInterval);
 
-            return Task.WhenAll(mergerTask, analyzerTask, resultPublisherTask);
+            await Task.WhenAll(mergerTask, analyzerTask, resultPublisherTask).ConfigureAwait(false);
         }
 
         /// <summary> Stops capturing and processing video frames. </summary>
         /// <returns> A Task. </returns>
         public async Task StopProcessingAsync()
         {
-            _logger.LogInformation("Stopping capturing tasks");
+            Logger.LogInformation("Stopping capturing tasks");
             foreach (VideoStreamGrabber vs in _streams)
             {
                 await vs.StopProcessingAsync().ConfigureAwait(false);
@@ -176,7 +177,7 @@ namespace DetectiCam.Core.VideoCapturing
             _streams.Clear();
 
 
-            _logger.LogInformation("Stopping merger");
+            Logger.LogInformation("Stopping merger");
             if (_merger != null)
             {
                 await _merger.StopProcessingAsync().ConfigureAwait(false);
@@ -184,7 +185,7 @@ namespace DetectiCam.Core.VideoCapturing
                 _merger = null;
             }
 
-            _logger.LogInformation("Stopping analyzer");
+            Logger.LogInformation("Stopping analyzer");
             if (_analyzer != null)
             {
                 await _analyzer.StopProcessingAsync().ConfigureAwait(false);
@@ -192,7 +193,7 @@ namespace DetectiCam.Core.VideoCapturing
                 _analyzer = null;
             }
 
-            _logger.LogInformation("Stopping result publisher");
+            Logger.LogInformation("Stopping result publisher");
             if (_resultPublisher != null)
             {
                 await _resultPublisher.StopProcessingAsync(default).ConfigureAwait(false);
@@ -201,34 +202,17 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    _trigger?.Dispose();
-                    foreach (VideoStreamGrabber vs in _streams)
-                    {
-                        vs?.Dispose();
-                    }
-                    _streams.Clear();
-                    _merger?.Dispose();
-                    _merger = null;
-                    _analyzer?.Dispose();
-                    _analyzer = null;
-                    _resultPublisher?.Dispose();
-                    _resultPublisher = null;
-                }
-
-                disposedValue = true;
-            }
-        }
-
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            _trigger?.Dispose();
+            foreach (VideoStreamGrabber vs in _streams)
+            {
+                vs?.Dispose();
+            }
+            _streams.Clear();
+            _merger?.Dispose();
+            _analyzer?.Dispose();
+            _resultPublisher?.Dispose();
         }
     }
 }

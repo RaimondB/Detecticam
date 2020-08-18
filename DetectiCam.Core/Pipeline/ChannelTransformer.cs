@@ -5,42 +5,34 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using static DetectiCam.Core.Common.ExceptionFilterUtility;
 
 namespace DetectiCam.Core.VideoCapturing
 {
-    public class ChannelTransformer<TInput,TOutput> : IDisposable
+    public abstract class ChannelTransformer<TInput, TOutput> : IDisposable
     {
         private readonly ChannelReader<TInput> _inputReader;
         private readonly ChannelWriter<TOutput> _outputWriter;
         private readonly ILogger _logger;
         private readonly CancellationTokenSource _internalCts;
 
-        private Func<TInput, CancellationToken, Task<TOutput>>? _transformer;
-        private Task? _processorTask = null;
-        private bool disposedValue;
+        private Task? _processorTask;
 
         protected ILogger Logger => _logger;
 
         public ChannelTransformer(ChannelReader<TInput> inputReader, ChannelWriter<TOutput> outputWriter,
-            ILogger logger,
-            Func<TInput, CancellationToken, Task<TOutput>>? transformer = default)
+            ILogger logger)
         {
             _inputReader = inputReader;
             _outputWriter = outputWriter;
             _logger = logger;
-            _transformer = transformer;
             _internalCts = new CancellationTokenSource();
         }
 
-        protected void SetTransformer(Func<TInput, CancellationToken, Task<TOutput>>? transformer)
-        {
-            _transformer = transformer;
-        }
+        protected abstract ValueTask<TOutput> ExecuteTransform(TInput input, CancellationToken cancellationToken);
 
         public Task ExecuteProcessingAsync(CancellationToken stoppingToken)
         {
-            if (_transformer is null) throw new InvalidOperationException("Transformer function not set");
-
             _processorTask = Task.Run(async () =>
             {
                 try
@@ -51,7 +43,7 @@ namespace DetectiCam.Core.VideoCapturing
 
                     await foreach(var inputValue in _inputReader.ReadAllAsync(linkedToken))
                     {
-                        var outputValue = await _transformer(inputValue, linkedToken).ConfigureAwait(false);
+                        var outputValue = await ExecuteTransform(inputValue, linkedToken).ConfigureAwait(false);
 
                         if (!_outputWriter.TryWrite(outputValue))
                         {
@@ -59,9 +51,9 @@ namespace DetectiCam.Core.VideoCapturing
                         }
                     }
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (False(() =>
+                    Logger.LogWarning("Transform operation cancelled")))
                 {
-                    _logger.LogWarning("Transform operation cancelled");
                     throw;
                 }
                 finally
@@ -85,35 +77,9 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    _internalCts?.Dispose();
-
-                    // TODO: dispose managed state (managed objects)
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
-                disposedValue = true;
-            }
-        }
-
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~MultiChannelMerger()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
-
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            _internalCts?.Dispose();
         }
     }
 }
