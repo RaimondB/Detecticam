@@ -9,7 +9,7 @@ updates:
   commit-message:
       # Prefix all commit messages with "npm"
       prefix: "fix:"
-      prefix=development: "ci:"
+      prefix-development: "ci:"
 - package-ecosystem: "docker"
   directory: "/DetectiCam/"
   schedule:
