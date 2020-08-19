@@ -9,3 +9,14 @@ updates:
   commit-message:
       # Prefix all commit messages with "npm"
       prefix: "fix:"
+      prefix=development: "ci:"
+- package-ecosystem: "docker"
+  directory: "/DetectiCam/"
+  schedule:
+    interval: "daily"
+    time: "02:00"
+  open-pull-requests-limit: 10
+  commit-message:
+      # Prefix all commit messages with "npm"
+      prefix: "fix:"
+      prefix-development: "ci:"
