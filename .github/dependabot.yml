@@ -8,8 +8,8 @@ updates:
   open-pull-requests-limit: 10
   commit-message:
       # Prefix all commit messages with "npm"
-      prefix: "fix:"
-      prefix-development: "ci:"
+      prefix: "fix"
+      prefix-development: "ci"
 - package-ecosystem: "docker"
   directory: "/DetectiCam/"
   schedule:
@@ -18,5 +18,5 @@ updates:
   open-pull-requests-limit: 10
   commit-message:
       # Prefix all commit messages with "npm"
-      prefix: "fix:"
-      prefix-development: "ci:"
+      prefix: "fix"
+      prefix-development: "ci"
