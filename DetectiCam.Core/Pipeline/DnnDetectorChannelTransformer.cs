@@ -1,4 +1,5 @@
-﻿using DetectiCam.Core.Detection;
+﻿using DetectiCam.Core.Common;
+using DetectiCam.Core.Detection;
 using DetectiCam.Core.VideoCapturing;
 using Microsoft.Extensions.Logging;
 using System;
@@ -17,13 +18,19 @@ namespace DetectiCam.Core.Pipeline
     public class DnnDetectorChannelTransformer : ChannelTransformer<IList<VideoFrame>, IList<VideoFrame>>
     {
         private readonly IBatchedDnnDetector _detector;
+        private readonly IHeartbeatReporter _heartbeatReporter;
 
         public DnnDetectorChannelTransformer(IBatchedDnnDetector detector,
-            ChannelReader<IList<VideoFrame>> inputReader, ChannelWriter<IList<VideoFrame>> outputWriter,
+            ChannelReader<IList<VideoFrame>> inputReader, 
+            ChannelWriter<IList<VideoFrame>> outputWriter,
+            IHeartbeatReporter heartbeatReporter,
             ILogger logger) :
             base(inputReader, outputWriter, logger)
         {
             if (detector is null) throw new ArgumentNullException(nameof(detector));
+            if (heartbeatReporter is null) throw new ArgumentNullException(nameof(heartbeatReporter));
+
+            _heartbeatReporter = heartbeatReporter;
 
             _detector = detector;
             _detector.Initialize();
@@ -51,6 +58,8 @@ namespace DetectiCam.Core.Pipeline
 
                     _stopwatch.Stop();
                     Logger.LogInformation("Classifiy-objects ms:{classifyDuration} for {imageCount} images", _stopwatch.ElapsedMilliseconds, images.Count);
+
+                    _heartbeatReporter.ReportHeartbeat();
 
                     for (int i = 0; i < result.Count; i++)
                     {

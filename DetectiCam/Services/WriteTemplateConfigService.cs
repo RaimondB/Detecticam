@@ -8,7 +8,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CameraWatcher
+namespace DetectiCam
 {
     public class WriteTemplateConfigService : IHostedService
     {

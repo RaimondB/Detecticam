@@ -1,5 +1,4 @@
-﻿#nullable enable
-
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,8 +10,9 @@ using System.Threading.Tasks;
 using DetectiCam.Core.Detection;
 using DetectiCam.Core.VideoCapturing;
 using DetectiCam.Core.ResultProcessor;
+using DetectiCam.Core.Common;
 
-namespace CameraWatcher
+namespace DetectiCam
 {
 
     class Program
@@ -25,6 +25,10 @@ namespace CameraWatcher
                 
                 config.AddEnvironmentVariables(prefix: "CAMERAWATCH_");
             })
+            .ConfigureWebHostDefaults(webBuilder =>
+            {
+                webBuilder.UseStartup<Startup>();
+            })
             .ConfigureServices((hostContext, services) =>
             {
                 services.AddOptions<MqttPublisherOptions>()
@@ -36,7 +40,6 @@ namespace CameraWatcher
                 services.AddOptions<VideoStreamsOptions>()
                     .Bind(hostContext.Configuration.GetSection(VideoStreamsOptions.VideoStreams))
                     .ValidateDataAnnotations();
-
 
                 var generateConfig = hostContext.Configuration.GetValue<bool>("gen-config");
                 if (generateConfig)
@@ -52,6 +55,7 @@ namespace CameraWatcher
                     services.AddSingleton<IAsyncSingleResultProcessor, CapturePublisher>();
                     services.AddSingleton<IAsyncSingleResultProcessor, WebhookPublisher>();
                     services.AddSingleton<IAsyncSingleResultProcessor, MqttPublisher>();
+                    services.AddSingleton<HeartbeatHealthCheck<MultiStreamBatchedProcessorPipeline>>();
 
                     services.AddSingleton<MultiStreamBatchedProcessorPipeline,
                         MultiStreamBatchedProcessorPipeline>();

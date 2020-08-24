@@ -3,6 +3,7 @@ using DetectiCam.Core.Detection;
 using DetectiCam.Core.Pipeline;
 using DetectiCam.Core.ResultProcessor;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenCvSharp;
@@ -31,21 +32,25 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly VideoStreamsOptions _streamsConfig;
 
         private readonly IBatchedDnnDetector _detector;
+        private readonly HeartbeatHealthCheck<MultiStreamBatchedProcessorPipeline> _healthCheck;
 
         private TimeSpan _analysisInterval = TimeSpan.FromSeconds(1);
         private PeriodicTrigger? _trigger;
 
         public MultiStreamBatchedProcessorPipeline([DisallowNull] ILogger<MultiStreamBatchedProcessorPipeline> logger,
                                               IOptions<VideoStreamsOptions> options,
+                                              HeartbeatHealthCheck<MultiStreamBatchedProcessorPipeline> healthCheck,
                                               IBatchedDnnDetector detector,
                                               IEnumerable<IAsyncSingleResultProcessor> resultProcessors):
             base(logger, options)
         {
             if (resultProcessors is null) throw new ArgumentNullException(nameof(resultProcessors));
             if (detector is null) throw new ArgumentNullException(nameof(detector));
+            if (healthCheck is null) throw new ArgumentNullException(nameof(healthCheck));
 
             _detector = detector;
             _resultProcessors = new List<IAsyncSingleResultProcessor>(resultProcessors);
+            _healthCheck = healthCheck;
 
             _streamsConfig = Options;
 
@@ -147,7 +152,7 @@ namespace DetectiCam.Core.VideoCapturing
             var mergerTask = _merger.ExecuteProcessingAsync(cancellationToken);
 
             _analyzer = new DnnDetectorChannelTransformer(_detector,
-                analysisChannel.Reader, outputChannel.Writer, Logger);
+                analysisChannel.Reader, outputChannel.Writer, _healthCheck, Logger);
             var analyzerTask = _analyzer.ExecuteProcessingAsync(cancellationToken);
 
             _resultPublisher = new AnalyzedVideoFrameChannelConsumer(

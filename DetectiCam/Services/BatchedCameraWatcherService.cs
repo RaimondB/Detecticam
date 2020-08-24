@@ -16,31 +16,24 @@ using DetectiCam.Core.Visualization;
 using DetectiCam.Core.Detection;
 using static DetectiCam.Core.Common.ExceptionFilterUtility;
 
-namespace CameraWatcher
+namespace DetectiCam
 {
     public class BatchedCameraWatcherService : BackgroundService
     {
         private readonly ILogger _logger;
         private readonly IHostApplicationLifetime _appLifetime;
-        private readonly IBatchedDnnDetector _detector;
-
         private readonly MultiStreamBatchedProcessorPipeline _pipeline;
 
         public BatchedCameraWatcherService(ILogger<BatchedCameraWatcherService> logger,
-                                        IBatchedDnnDetector detector,
                                         MultiStreamBatchedProcessorPipeline pipeline,
-                                       IHostApplicationLifetime appLifetime,
-                                       IConfiguration configRoot)
+                                       IHostApplicationLifetime appLifetime)
         {
             if (logger is null) throw new ArgumentNullException(nameof(logger));
-            if (detector is null) throw new ArgumentNullException(nameof(detector));
             if (pipeline is null) throw new ArgumentNullException(nameof(pipeline));
             if (appLifetime is null) throw new ArgumentNullException(nameof(appLifetime));
-            if (configRoot is null) throw new ArgumentNullException(nameof(configRoot));
 
             _logger = logger;
             _appLifetime = appLifetime;
-            _detector = detector;
             _pipeline = pipeline;
         }
 
@@ -56,13 +49,15 @@ namespace CameraWatcher
 
                 var pipelineTask = _pipeline.StartProcessingAll(stoppingToken);
                 await pipelineTask.ConfigureAwait(false);
-
-                // When the pipeline is done, we can exit the application
-                _appLifetime.StopApplication();
             }
             catch (Exception ex) when (False(() => _logger.LogCritical(ex, "Fatal error")))
             {
                 throw;
+            }
+            finally
+            {
+                // When the pipeline is done, we can exit the application
+                _appLifetime.StopApplication();
             }
         }, stoppingToken);
 
@@ -71,6 +66,8 @@ namespace CameraWatcher
             _logger.LogInformation("Process received stop signal.");
 
             await _pipeline.StopProcessingAsync().ConfigureAwait(false);
+
+            _logger.LogInformation("Process stopped.");
         }
 
         public override void Dispose()
@@ -78,7 +75,6 @@ namespace CameraWatcher
             base.Dispose();
 
             _pipeline?.Dispose();
-            _detector?.Dispose();
 
             GC.SuppressFinalize(this);
         }
