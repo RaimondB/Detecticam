@@ -4,11 +4,11 @@ dotnet: 3.1
 
 solution: DetectiCam.sln
 
-stages:
-  - name: "Build & Publish Code Analysis"
-    if: branch = master
-  - name: "Build"
-    if: branch != master
+#stages:
+#  - name: "Build & Publish Code Analysis"
+#    if: branch = master
+#  - name: "Build"
+#    if: branch != master
 
 
 jobs:
@@ -17,10 +17,10 @@ jobs:
       script:
         - dotnet restore
         - dotnet tool restore
-        - dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="${SONAR_TOKEN}" /d:sonar.host.url="https://sonarcloud.io"
+        - dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="${SONAR_TOKEN}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="${TRAVIS_BRANCH}"
         - dotnet test
         - dotnet tool run dotnet-sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
-    - stage: "Build"
-      script:
-        - dotnet restore
-        - dotnet test  
+#    - stage: "Build"
+#     script:
+#       - dotnet restore
+#       - dotnet test  
