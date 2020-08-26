@@ -1,15 +1,14 @@
-addons:
-  sonarcloud:
-    organization: "raimondb"
-    token:
-      secure: "Llrh6vid1adlNmtlDAzTnhzKtX3AzJAGaEACqpteRSz9IjmTux0JZOBWSzUwyEGmZWQ+Smj0z3bCCisJb0tnZAcWXH4L48iDeeM34zDENKbZlEnafq8KMiLOsmjWXPxdTf5+30q8w4Hhb5oYFlP4GX+5fEXwkTH09Im8DtwWDVbTcdGCvjCrQAWF4FYatHRcBfbZ44GdyUiq1v3ma1DnpbcUvvoKTi3tK5b5Dl7xCoSB7vOcAOKcoD8UkvjA5M1DVo1ULYSIr9qnJUjxx5XQbcpcMHs00dowLnMT9M+F20vYUxx0VsblAH7SEt3/IyDEed58/411XpYVuA8dTy2FwPLQ3bvxbq5L/O5CHVuAIUxSSDlaRSMD6j1dUcWBldX05GMIT4YiXVXPcUgcGWESbyrZI9UaM4LsVGYvobdPzrVpRxYVAfM9VS/5Zz4XEH5Bay6iZBojicrIsACNsSa0uRlU4787w4UkqpgNIw7j0DuzCe9AwhP5v/fuBa90SKAspXUaI6QexMDXbknYxYZr7hpZJRZyTTpnbikPngr6IrHaR4CGDr/Pe2xoi6SMYrzs8+r4vsXSCU6NBbN5hvDhXeH6ioIQmA1BhiQqbgOoYTJuPyMx+ItyEyqc/QougMSQV1Fwq9oDHFZoVxv6Ma3wiuEByBorPH3i+wQhXmzLdbQ="
-
 language: csharp
 mono: none
 dotnet: 3.1
 
+install:
+  - dotnet tool install --global dotnet-sonarscanner --version 4.8.0
+
 solution: DetectiCam.sln
 script:
   - dotnet restore
+  - dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.host.url="https://sonarcloud.io"
   - dotnet test
-  - sonar-scanner
+  - dotnet-sonarscanner end
+  
