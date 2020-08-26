@@ -10,6 +10,8 @@ solution: DetectiCam.sln
 #  - name: "Build"
 #    if: branch != master
 
+# Commented to try out the sonar branch based approach.
+
 
 jobs:
   include:
