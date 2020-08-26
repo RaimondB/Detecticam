@@ -1,5 +1,8 @@
 FROM raimondb/opencv-dotnet-runtime-deps:0.4.0 AS base
-COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"] 
+COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"]
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1.401-bionic AS build
 WORKDIR /src
@@ -16,6 +19,10 @@ RUN dotnet publish "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 --s
 FROM base AS final
 VOLUME /captures
 VOLUME /config
+EXPOSE 80
+ENV ASPNETCORE_URLS=http://+:80
 WORKDIR /app
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost/health || exit 1
 COPY --from=publish /app/publish .
 ENTRYPOINT ["./DetectiCam", "--configdir=/config"]
