@@ -7,5 +7,5 @@ script:
   - dotnet restore
   - dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="${SONAR_TOKEN}" /d:sonar.host.url="https://sonarcloud.io"
   - dotnet test
-  - dotnet tool run dotnet-sonarscanner end /d:sonar.login="$(SONAR_TOKEN)"
+  - dotnet tool run dotnet-sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
   
