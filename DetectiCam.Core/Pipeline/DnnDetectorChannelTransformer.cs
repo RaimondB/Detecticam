@@ -4,10 +4,8 @@ using DetectiCam.Core.VideoCapturing;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -21,7 +19,7 @@ namespace DetectiCam.Core.Pipeline
         private readonly IHeartbeatReporter _heartbeatReporter;
 
         public DnnDetectorChannelTransformer(IBatchedDnnDetector detector,
-            ChannelReader<IList<VideoFrame>> inputReader, 
+            ChannelReader<IList<VideoFrame>> inputReader,
             ChannelWriter<IList<VideoFrame>> outputWriter,
             IHeartbeatReporter heartbeatReporter,
             ILogger logger) :
@@ -36,7 +34,7 @@ namespace DetectiCam.Core.Pipeline
             _detector.Initialize();
         }
 
-        private readonly Stopwatch _stopwatch = new Stopwatch(); 
+        private readonly Stopwatch _stopwatch = new Stopwatch();
 
         protected override ValueTask<IList<VideoFrame>> ExecuteTransform(IList<VideoFrame> frames, CancellationToken cancellationToken)
         {

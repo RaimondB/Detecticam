@@ -1,16 +1,14 @@
 ﻿using OpenCvSharp;
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text;
 using Range = OpenCvSharp.Range;
 
 namespace DetectiCam.Core.Detection
 {
     public static class OpenCVExtensions
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining|MethodImplOptions.AggressiveOptimization)]
-        public static int FindMaxValueIndexInRange<T>(this Mat inputMatrix, int dim0Index, int dim1Index, Range dim2Range) where T:unmanaged,IComparable<T>
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public static int FindMaxValueIndexInRange<T>(this Mat inputMatrix, int dim0Index, int dim1Index, Range dim2Range) where T : unmanaged, IComparable<T>
         {
             if (inputMatrix is null) throw new ArgumentNullException(nameof(inputMatrix));
 
@@ -20,7 +18,7 @@ namespace DetectiCam.Core.Detection
             for (int dim2Index = dim2Range.Start; dim2Index <= dim2Range.End; dim2Index++)
             {
                 var curValue = inputMatrix.At<T>(dim0Index, dim1Index, dim2Index);
-                if (curValue.CompareTo(dim2MaxValue) >0)
+                if (curValue.CompareTo(dim2MaxValue) > 0)
                 {
                     dim2MaxIndex = dim2Index;
                     dim2MaxValue = curValue;
@@ -51,7 +49,7 @@ namespace DetectiCam.Core.Detection
 
         public static void SafeDispose(this Mat? itemToDispose)
         {
-            if (itemToDispose != null && 
+            if (itemToDispose != null &&
                 itemToDispose.IsEnabledDispose &&
                 !itemToDispose.IsDisposed)
             {

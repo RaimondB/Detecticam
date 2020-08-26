@@ -2,19 +2,12 @@ using DetectiCam.Core.Common;
 using DetectiCam.Core.Detection;
 using DetectiCam.Core.Pipeline;
 using DetectiCam.Core.ResultProcessor;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OpenCvSharp;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -41,7 +34,7 @@ namespace DetectiCam.Core.VideoCapturing
                                               IOptions<VideoStreamsOptions> options,
                                               HeartbeatHealthCheck<MultiStreamBatchedProcessorPipeline> healthCheck,
                                               IBatchedDnnDetector detector,
-                                              IEnumerable<IAsyncSingleResultProcessor> resultProcessors):
+                                              IEnumerable<IAsyncSingleResultProcessor> resultProcessors) :
             base(logger, options)
         {
             if (resultProcessors is null) throw new ArgumentNullException(nameof(resultProcessors));
@@ -54,7 +47,7 @@ namespace DetectiCam.Core.VideoCapturing
 
             _streamsConfig = Options;
 
-            Logger.LogInformation("Loaded configuration for {numberOfStreams} streams:{streamIds}", 
+            Logger.LogInformation("Loaded configuration for {numberOfStreams} streams:{streamIds}",
                 _streamsConfig.Count,
                 String.Join(",", _streamsConfig.Select(s => s.Id)));
         }
@@ -207,7 +200,14 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
+
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
         {
             _trigger?.Dispose();
             foreach (VideoStreamGrabber vs in _streams)

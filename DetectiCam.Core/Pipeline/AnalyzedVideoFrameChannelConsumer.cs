@@ -1,11 +1,9 @@
 ﻿using DetectiCam.Core.ResultProcessor;
 using Microsoft.Extensions.Logging;
-using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -60,7 +58,7 @@ namespace DetectiCam.Core.VideoCapturing
 
                 await Task.WhenAll(resultTasks).ConfigureAwait(false);
             }
-            catch (Exception ex) when (True(() => 
+            catch (Exception ex) when (True(() =>
                 Logger.LogError(ex, "Exceptions during publication of detection results")))
             {
             }

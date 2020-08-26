@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using DetectiCam.Core.Common;
+using DetectiCam.Core.Detection;
+using DetectiCam.Core.ResultProcessor;
+using DetectiCam.Core.VideoCapturing;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,10 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using DetectiCam.Core.Detection;
-using DetectiCam.Core.VideoCapturing;
-using DetectiCam.Core.ResultProcessor;
-using DetectiCam.Core.Common;
 
 namespace DetectiCam
 {
@@ -22,7 +22,7 @@ namespace DetectiCam
             .ConfigureAppConfiguration((hostingContext, config) =>
             {
                 ConfigureConfigDir(hostingContext, config);
-                
+
                 config.AddEnvironmentVariables(prefix: "CAMERAWATCH_");
             })
             .ConfigureWebHostDefaults(webBuilder =>

@@ -1,15 +1,13 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using DetectiCam.Core.VideoCapturing;
+﻿using DetectiCam.Core.Pipeline;
+using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
-using Microsoft.Extensions.Logging;
-using Moq;
-using DetectiCam.Core.Pipeline;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace DetectiCam.Core.VideoCapturing.Tests
 {
@@ -23,7 +21,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
 
             public int? SyncToken => TriggerId;
         }
-    
+
 
         CancellationTokenSource _cts;
 
@@ -90,7 +88,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             await foreach (var result in _output.Reader.ReadAllAsync(_cts.Token))
             {
                 Assert.AreEqual(2, result.Count);
-                Assert.AreEqual(6, result.Select(x=>x.Value).Sum());
+                Assert.AreEqual(6, result.Select(x => x.Value).Sum());
                 resultCount++;
             }
 
@@ -164,7 +162,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
         {
             if (triggerIds.Length != values.Length) throw new ArgumentException("number of triggerIds and values must be equal");
 
-            for(int i = 0; i < triggerIds.Length; i++)
+            for (int i = 0; i < triggerIds.Length; i++)
             {
                 await input.WriteAsync(new SyncItem() { TriggerId = triggerIds[i], Value = values[i] });
             }

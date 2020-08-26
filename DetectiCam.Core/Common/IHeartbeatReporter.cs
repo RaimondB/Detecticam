@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace DetectiCam.Core.Common
+﻿namespace DetectiCam.Core.Common
 {
     public interface IHeartbeatReporter
     {

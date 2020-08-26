@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using OpenCvSharp.Dnn;
@@ -7,13 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Range = OpenCvSharp.Range;
 
 namespace DetectiCam.Core.Detection
 {
-    public class YoloBatchedDnnDetector : IBatchedDnnDetector
+    public sealed class YoloBatchedDnnDetector : IBatchedDnnDetector
     {
         private readonly ILogger _logger;
 
@@ -64,14 +61,14 @@ namespace DetectiCam.Core.Detection
 
             outs = Enumerable.Repeat(false, _outNames.Length).Select(_ => new Mat()).ToArray();
             _logger.LogInformation("Warm Up Neural Net with Dummy images");
-            
+
             //Initialize();
         }
 
         public void Initialize()
         {
             _logger.LogInformation("Start Detector initalize");
-            using Mat dummy1 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0,0,255));
+            using Mat dummy1 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
             using Mat dummy2 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
 
             var images = new List<Mat>
@@ -145,7 +142,7 @@ namespace DetectiCam.Core.Detection
                 {
                     //dimensions will be 2 for single image analysis and 3 for batch analysis
                     //2 input Prob Dims:3 images: 0 - 2, 1 - 300, 2 - 85
-                    
+
                     var probabilitiesRange = new Range(prefix, prob.Size(2) - 1);
 
                     for (var i = 0; i < prob.Size(1); i++)

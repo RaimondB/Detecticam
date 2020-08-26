@@ -1,8 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using DetectiCam.Core.VideoCapturing;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace DetectiCam.Core.VideoCapturing.Tests
 {

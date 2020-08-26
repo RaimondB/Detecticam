@@ -4,13 +4,9 @@
 using DetectiCam.Core.Detection;
 using DetectiCam.Core.Pipeline;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 using OpenCvSharp;
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -19,7 +15,7 @@ using System.Threading.Tasks;
 namespace DetectiCam.Core.VideoCapturing
 {
 
-    public class VideoStreamGrabber : IDisposable, ITimestampTrigger
+    public sealed class VideoStreamGrabber : IDisposable, ITimestampTrigger
     {
         public string Path { get; }
 
@@ -41,8 +37,8 @@ namespace DetectiCam.Core.VideoCapturing
 
         private readonly CancellationTokenSource _internalCts;
 
-        private readonly Channel<(Mat Frame, DateTime Timestamp, int FrameCount)> _frameBufferChannel = 
-            Channel.CreateBounded <(Mat Frame, DateTime Timestamp, int FrameCount)>(
+        private readonly Channel<(Mat Frame, DateTime Timestamp, int FrameCount)> _frameBufferChannel =
+            Channel.CreateBounded<(Mat Frame, DateTime Timestamp, int FrameCount)>(
             new BoundedChannelOptions(1)
             {
                 FullMode = BoundedChannelFullMode.DropOldest,
@@ -150,14 +146,14 @@ namespace DetectiCam.Core.VideoCapturing
                             int errorCount = 0;
                             bool restart = false;
 
-                            while (!linkedToken.IsCancellationRequested && !restart )
+                            while (!linkedToken.IsCancellationRequested && !restart)
                             {
                                 var result = GrabFrame(reader, frameCount++, ref errorCount);
 
                                 switch (result)
                                 {
                                     case GrabResult.Succeeded:
-                                        if(frameCount ==1) capstureStartedTcs.SetResult(true);
+                                        if (frameCount == 1) capstureStartedTcs.SetResult(true);
                                         Thread.Sleep(delayMs);
                                         break;
                                     case GrabResult.FailAbort:
@@ -192,7 +188,7 @@ namespace DetectiCam.Core.VideoCapturing
             return capstureStartedTcs.Task;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining| MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         private GrabResult GrabFrame(VideoCapture reader, int frameCount, ref int errorCount)
         {
             Mat imageBuffer = (frameCount % 2 == 0) ? _image1 : _image2;

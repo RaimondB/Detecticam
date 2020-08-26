@@ -1,19 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using DetectiCam.Core.VideoCapturing;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OpenCvSharp;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using DetectiCam.Core.VideoCapturing;
-using DetectiCam.Core.Visualization;
-using DetectiCam.Core.Detection;
 using static DetectiCam.Core.Common.ExceptionFilterUtility;
 
 namespace DetectiCam

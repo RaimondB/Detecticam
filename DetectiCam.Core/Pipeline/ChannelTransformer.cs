@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -41,7 +39,7 @@ namespace DetectiCam.Core.VideoCapturing
                         _internalCts.Token, stoppingToken);
                     var linkedToken = cts.Token;
 
-                    await foreach(var inputValue in _inputReader.ReadAllAsync(linkedToken))
+                    await foreach (var inputValue in _inputReader.ReadAllAsync(linkedToken))
                     {
                         var outputValue = await ExecuteTransform(inputValue, linkedToken).ConfigureAwait(false);
 
@@ -77,7 +75,14 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
+
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
         {
             _internalCts?.Dispose();
         }
