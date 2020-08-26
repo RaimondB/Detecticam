@@ -5,8 +5,8 @@ dotnet: 3.1
 solution: DetectiCam.sln
 script:
   - dotnet restore
-  - dotnet tool restore
-  - dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="${SONAR_TOKEN}" /d:sonar.host.url="https://sonarcloud.io"
+  - if [ $TRAVIS_BRANCH == "master" ] dotnet tool restore
+  - if [ $TRAVIS_BRANCH == "master" ] dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="${SONAR_TOKEN}" /d:sonar.host.url="https://sonarcloud.io"
   - dotnet test
-  - dotnet tool run dotnet-sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
+  - if [ $TRAVIS_BRANCH == "master" ] dotnet tool run dotnet-sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
   
