@@ -17,36 +17,24 @@ namespace DetectiCam.Core.VideoCapturing
         {
             get
             {
-                return _rotateFlags?.ToString();
+                return RotateFlags?.ToString();
             }
 
             set
             {
                 if (Enum.TryParse<RotateFlags>(value, out var rotateFlags))
                 {
-                    _rotateFlags = rotateFlags;
+                    RotateFlags = rotateFlags;
                 }
                 else
                 {
-                    _rotateFlags = null;
+                    RotateFlags = null;
                 }
             }
         }
 
         public Uri? CallbackUrl { get; set; }
 
-        private RotateFlags? _rotateFlags;
-
-        public RotateFlags? RotateFlags
-        {
-            get
-            {
-                return _rotateFlags;
-            }
-            set
-            {
-                _rotateFlags = value;
-            }
-        }
+        public RotateFlags? RotateFlags { get; set; }
     }
 }

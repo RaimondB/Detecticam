@@ -18,7 +18,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         protected ILogger Logger => _logger;
 
-        public ChannelTransformer(ChannelReader<TInput> inputReader, ChannelWriter<TOutput> outputWriter,
+        protected ChannelTransformer(ChannelReader<TInput> inputReader, ChannelWriter<TOutput> outputWriter,
             ILogger logger)
         {
             _inputReader = inputReader;

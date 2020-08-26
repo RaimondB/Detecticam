@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace DetectiCam
 {
 
-    class Program
+    public static class Program
     {
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
@@ -80,6 +80,7 @@ namespace DetectiCam
                 configPath = Path.GetFullPath(basePathConfig);
                 if (Directory.Exists(configPath))
                 {
+                    //TODO: Find out how to get logger from static Host
                     //Console.WriteLine($"ConfigDir for configuration:{configPath}");
                     config.AddJsonFile(Path.GetFullPath("appsettings.json", configPath));
                 }

@@ -39,13 +39,10 @@ namespace DetectiCam.Core.ResultProcessor
             }
             else
             {
-                if (_isEnabled)
+                if (_isEnabled && !String.IsNullOrEmpty(Options.CaptureRootDir))
                 {
-                    if (!String.IsNullOrEmpty(Options.CaptureRootDir))
-                    {
-                        _captureRootPath = Options.CaptureRootDir;
-                        EnsureDirectoryPath(_captureRootPath);
-                    }
+                    _captureRootPath = Options.CaptureRootDir;
+                    EnsureDirectoryPath(_captureRootPath);
                 }
             }
         }
@@ -58,7 +55,7 @@ namespace DetectiCam.Core.ResultProcessor
                 if (!String.IsNullOrEmpty(folder) && !Directory.Exists(folder))
                 {
                     // Try to create the directory.
-                    DirectoryInfo di = Directory.CreateDirectory(folder);
+                    Directory.CreateDirectory(folder);
                 }
             }
             catch (IOException ioex)

@@ -15,7 +15,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         protected ILogger Logger { get; }
 
-        public ChannelConsumer(ChannelReader<TInput> inputReader,
+        protected ChannelConsumer(ChannelReader<TInput> inputReader,
             ILogger logger)
         {
             _inputReader = inputReader;

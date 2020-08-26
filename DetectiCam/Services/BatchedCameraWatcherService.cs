@@ -41,10 +41,12 @@ namespace DetectiCam
                 var pipelineTask = _pipeline.StartProcessingAll(stoppingToken);
                 await pipelineTask.ConfigureAwait(false);
             }
+#pragma warning disable S2737 // "catch" clauses should do more than rethrow
             catch (Exception ex) when (False(() => _logger.LogCritical(ex, "Fatal error")))
             {
                 throw;
             }
+#pragma warning restore S2737 // "catch" clauses should do more than rethrow
             finally
             {
                 // When the pipeline is done, we can exit the application

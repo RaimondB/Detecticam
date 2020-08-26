@@ -158,10 +158,15 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             Assert.AreEqual(4, resultCount);
         }
 
-        private static async Task WriteSequenceAsync(ChannelWriter<SyncItem> input, int[] triggerIds, int[] values)
+        private static Task WriteSequenceAsync(ChannelWriter<SyncItem> input, int[] triggerIds, int[] values)
         {
             if (triggerIds.Length != values.Length) throw new ArgumentException("number of triggerIds and values must be equal");
 
+            return WriteSequenceInternalAsync(input, triggerIds, values);
+        }
+
+        private static async Task WriteSequenceInternalAsync(ChannelWriter<SyncItem> input, int[] triggerIds, int[] values)
+        {
             for (int i = 0; i < triggerIds.Length; i++)
             {
                 await input.WriteAsync(new SyncItem() { TriggerId = triggerIds[i], Value = values[i] });
@@ -192,30 +197,5 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             await task;
             Assert.AreEqual(4, resultCount);
         }
-
-
-        //[TestMethod()]
-        //public void SyncedMultiChannelMergerTest()
-        //{
-        //    Assert.Fail();
-        //}
-
-        //[TestMethod()]
-        //public void ExecuteProcessingAsyncTest()
-        //{
-        //    Assert.Fail();
-        //}
-
-        //[TestMethod()]
-        //public void StopProcessingAsyncTest()
-        //{
-        //    Assert.Fail();
-        //}
-
-        //[TestMethod()]
-        //public void DisposeTest()
-        //{
-        //    Assert.Fail();
-        //}
     }
 }

@@ -103,6 +103,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             });
 
             await _sut.StopProcessingAsync();
+            await Task.WhenAll(task, firstTask, secondTask);
 
             if (_output.Reader.TryRead(out var result))
             {
@@ -138,7 +139,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
                 _secondInput.Writer.Complete();
             });
 
-            await task;
+            await Task.WhenAll(task,firstTask,secondTask);
             Assert.Fail("Should not be here since cancellation will throw");
         }
     }

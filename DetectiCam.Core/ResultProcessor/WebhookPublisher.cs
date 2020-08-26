@@ -19,10 +19,15 @@ namespace DetectiCam.Core.ResultProcessor
             _clientFactory = clientFactory;
         }
 
-        public async Task ProcessResultAsync(VideoFrame frame)
+        public Task ProcessResultAsync(VideoFrame frame)
         {
             if (frame is null) throw new ArgumentNullException(nameof(frame));
 
+            return ProcessResultInternalAsync(frame);
+        }
+
+        private async Task ProcessResultInternalAsync(VideoFrame frame)
+        {
             var url = frame.Metadata.Info.CallbackUrl;
             if (url != null)
             {

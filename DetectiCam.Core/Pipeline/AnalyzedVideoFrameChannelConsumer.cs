@@ -26,10 +26,15 @@ namespace DetectiCam.Core.VideoCapturing
             _resultProcessors = new List<IAsyncSingleResultProcessor>(resultProcessors);
         }
 
-        protected override async Task ExecuteProcessorAsync([DisallowNull] IList<VideoFrame> analyzedFrames, CancellationToken cancellationToken)
+        protected override Task ExecuteProcessorAsync([DisallowNull] IList<VideoFrame> input, CancellationToken cancellationToken)
         {
-            if (analyzedFrames is null) throw new ArgumentNullException(nameof(analyzedFrames));
+            if (input is null) throw new ArgumentNullException(nameof(input));
 
+            return ExecuteProcessorInternalAsync(input);
+        }
+
+        private async Task ExecuteProcessorInternalAsync(IList<VideoFrame> analyzedFrames)
+        {
             var resultTasks = new List<Task>();
             try
             {
@@ -60,8 +65,10 @@ namespace DetectiCam.Core.VideoCapturing
             }
             catch (Exception ex) when (True(() =>
                 Logger.LogError(ex, "Exceptions during publication of detection results")))
-            {
+#pragma warning disable S108 // Nested blocks of code should not be left empty
+            { 
             }
+#pragma warning restore S108 // Nested blocks of code should not be left empty
             finally
             {
                 resultTasks.Clear();
