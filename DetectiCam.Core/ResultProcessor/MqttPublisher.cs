@@ -1,18 +1,9 @@
 ﻿using DetectiCam.Core.Common;
 using DetectiCam.Core.Detection;
 using DetectiCam.Core.VideoCapturing;
-using DetectiCam.Core.Visualization;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OpenCvSharp;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +13,7 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 
 namespace DetectiCam.Core.ResultProcessor
 {
-    public class MqttPublisher : ConfigurableService<MqttPublisher, MqttPublisherOptions>, 
+    public class MqttPublisher : ConfigurableService<MqttPublisher, MqttPublisherOptions>,
         IAsyncSingleResultProcessor
     {
         private readonly MqttClient? _client;

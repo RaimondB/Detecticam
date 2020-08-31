@@ -7,13 +7,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenCvSharp;
 using System;
-using System.Collections.Generic;
-using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,13 +39,10 @@ namespace DetectiCam.Core.ResultProcessor
             }
             else
             {
-                if (_isEnabled)
+                if (_isEnabled && !String.IsNullOrEmpty(Options.CaptureRootDir))
                 {
-                    if (!String.IsNullOrEmpty(Options.CaptureRootDir))
-                    {
-                        _captureRootPath = Options.CaptureRootDir;
-                        EnsureDirectoryPath(_captureRootPath);
-                    }
+                    _captureRootPath = Options.CaptureRootDir;
+                    EnsureDirectoryPath(_captureRootPath);
                 }
             }
         }
@@ -62,7 +55,7 @@ namespace DetectiCam.Core.ResultProcessor
                 if (!String.IsNullOrEmpty(folder) && !Directory.Exists(folder))
                 {
                     // Try to create the directory.
-                    DirectoryInfo di = Directory.CreateDirectory(folder);
+                    Directory.CreateDirectory(folder);
                 }
             }
             catch (IOException ioex)
@@ -88,11 +81,11 @@ namespace DetectiCam.Core.ResultProcessor
                 frame.Metadata.Timestamp, results.Count);
 
             var labelStats = from r in results
-                              group r by r.Label into g
-                              select $"#{g.Key}:{g.Count()}" ;
+                             group r by r.Label into g
+                             select $"#{g.Key}:{g.Count()}";
 
             var stats = String.Join("; ", labelStats);
-         
+
             Logger.LogInformation("Detected: {detectionstats}", stats);
 
 
@@ -136,7 +129,7 @@ namespace DetectiCam.Core.ResultProcessor
         {
             var ts = frame.Metadata.Timestamp;
 
-            var result = _patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{','}'), CultureInfo.CurrentCulture));
+            var result = _patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{', '}'), CultureInfo.CurrentCulture));
 
             return result;
         }

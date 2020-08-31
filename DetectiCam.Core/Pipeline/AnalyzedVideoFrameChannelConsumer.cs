@@ -1,11 +1,9 @@
 ﻿using DetectiCam.Core.ResultProcessor;
 using Microsoft.Extensions.Logging;
-using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -28,10 +26,15 @@ namespace DetectiCam.Core.VideoCapturing
             _resultProcessors = new List<IAsyncSingleResultProcessor>(resultProcessors);
         }
 
-        protected override async Task ExecuteProcessorAsync([DisallowNull] IList<VideoFrame> analyzedFrames, CancellationToken cancellationToken)
+        protected override Task ExecuteProcessorAsync([DisallowNull] IList<VideoFrame> input, CancellationToken cancellationToken)
         {
-            if (analyzedFrames is null) throw new ArgumentNullException(nameof(analyzedFrames));
+            if (input is null) throw new ArgumentNullException(nameof(input));
 
+            return ExecuteProcessorInternalAsync(input);
+        }
+
+        private async Task ExecuteProcessorInternalAsync(IList<VideoFrame> analyzedFrames)
+        {
             var resultTasks = new List<Task>();
             try
             {
@@ -60,10 +63,12 @@ namespace DetectiCam.Core.VideoCapturing
 
                 await Task.WhenAll(resultTasks).ConfigureAwait(false);
             }
-            catch (Exception ex) when (True(() => 
+            catch (Exception ex) when (True(() =>
                 Logger.LogError(ex, "Exceptions during publication of detection results")))
-            {
+#pragma warning disable S108 // Nested blocks of code should not be left empty
+            { 
             }
+#pragma warning restore S108 // Nested blocks of code should not be left empty
             finally
             {
                 resultTasks.Clear();

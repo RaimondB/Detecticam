@@ -1,19 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using DetectiCam.Core.VideoCapturing;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OpenCvSharp;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using DetectiCam.Core.VideoCapturing;
-using DetectiCam.Core.Visualization;
-using DetectiCam.Core.Detection;
 using static DetectiCam.Core.Common.ExceptionFilterUtility;
 
 namespace DetectiCam
@@ -50,10 +41,12 @@ namespace DetectiCam
                 var pipelineTask = _pipeline.StartProcessingAll(stoppingToken);
                 await pipelineTask.ConfigureAwait(false);
             }
+#pragma warning disable S2737 // "catch" clauses should do more than rethrow
             catch (Exception ex) when (False(() => _logger.LogCritical(ex, "Fatal error")))
             {
                 throw;
             }
+#pragma warning restore S2737 // "catch" clauses should do more than rethrow
             finally
             {
                 // When the pipeline is done, we can exit the application

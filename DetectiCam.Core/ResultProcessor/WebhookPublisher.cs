@@ -1,21 +1,13 @@
-﻿using DetectiCam.Core.Detection;
-using DetectiCam.Core.VideoCapturing;
-using DetectiCam.Core.Visualization;
-using Microsoft.Extensions.Configuration;
+﻿using DetectiCam.Core.VideoCapturing;
 using Microsoft.Extensions.Logging;
-using OpenCvSharp;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace DetectiCam.Core.ResultProcessor
 {
-    public class WebhookPublisher :  IAsyncSingleResultProcessor
+    public class WebhookPublisher : IAsyncSingleResultProcessor
     {
         private readonly ILogger _logger;
         private readonly IHttpClientFactory _clientFactory;
@@ -27,10 +19,15 @@ namespace DetectiCam.Core.ResultProcessor
             _clientFactory = clientFactory;
         }
 
-        public async Task ProcessResultAsync(VideoFrame frame)
+        public Task ProcessResultAsync(VideoFrame frame)
         {
             if (frame is null) throw new ArgumentNullException(nameof(frame));
 
+            return ProcessResultInternalAsync(frame);
+        }
+
+        private async Task ProcessResultInternalAsync(VideoFrame frame)
+        {
             var url = frame.Metadata.Info.CallbackUrl;
             if (url != null)
             {

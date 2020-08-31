@@ -8,12 +8,12 @@ namespace DetectiCam.Core.Detection
 
         [Required]
         public bool Enabled { get; set; } = false;
-        public string? Server { get; set; } 
-        
+        public string? Server { get; set; }
+
         public int Port { get; set; } = 1883;
         public string? Username { get; set; }
         public string? Password { get; set; }
-        public string? TopicPrefix { get; set; } 
+        public string? TopicPrefix { get; set; }
         public string? ClientId { get; set; }
     }
 }

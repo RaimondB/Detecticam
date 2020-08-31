@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using OpenCvSharp.Dnn;
@@ -7,25 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Range = OpenCvSharp.Range;
 
 namespace DetectiCam.Core.Detection
 {
-    public class YoloBatchedDnnDetector : IBatchedDnnDetector
+    public sealed class YoloBatchedDnnDetector : IBatchedDnnDetector
     {
         private readonly ILogger _logger;
 
-        //YOLOv3
-        //https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg
-        private readonly string Cfg;
-
-        //https://pjreddie.com/media/files/yolov3.weights
-        private readonly string Weight;
-
-        //https://github.com/pjreddie/darknet/blob/master/data/coco.names
-        private readonly string Names;
 
         private readonly Scalar[] Colors;
         private readonly string[] Labels;
@@ -46,32 +34,34 @@ namespace DetectiCam.Core.Detection
             var options = new Yolo3Options();
             configuration.GetSection(Yolo3Options.Yolo3).Bind(options);
 
-            Cfg = Path.Combine(options.RootPath, options.ConfigFile);
-            Weight = Path.Combine(options.RootPath, options.WeightsFile);
-            Names = Path.Combine(options.RootPath, options.NamesFile);
+            //YOLOv3 Fiel locations
+            //Cfg: https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg
+            //Weight: https://pjreddie.com/media/files/yolov3.weights
+            //Names: https://github.com/pjreddie/darknet/blob/master/data/coco.names
+
+            var cfg = Path.Combine(options.RootPath, options.ConfigFile);
+            var weight = Path.Combine(options.RootPath, options.WeightsFile);
+            var names = Path.Combine(options.RootPath, options.NamesFile);
 
             //random assign color to each label
-            Labels = File.ReadAllLines(Names).ToArray();
+            Labels = File.ReadAllLines(names).ToArray();
 
             //get labels from coco.names
             Colors = Enumerable.Repeat(false, Labels.Length).Select(x => Scalar.RandomColor()).ToArray();
 
             _logger.LogInformation("Loading Neural Net");
-            nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(Cfg, Weight);
-            //nnet.SetPreferableBackend(Net.Backend.INFERENCE_ENGINE);
-            //nnet.SetPreferableTarget(Net.Target.OPENCL);
+            nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(cfg, weight);
+
             _outNames = nnet.GetUnconnectedOutLayersNames()!;
 
             outs = Enumerable.Repeat(false, _outNames.Length).Select(_ => new Mat()).ToArray();
             _logger.LogInformation("Warm Up Neural Net with Dummy images");
-            
-            //Initialize();
         }
 
         public void Initialize()
         {
             _logger.LogInformation("Start Detector initalize");
-            using Mat dummy1 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0,0,255));
+            using Mat dummy1 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
             using Mat dummy2 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
 
             var images = new List<Mat>
@@ -79,7 +69,7 @@ namespace DetectiCam.Core.Detection
                 dummy1,
                 dummy2
             };
-            var res = ClassifyObjects(images);
+            ClassifyObjects(images);
             _logger.LogInformation("Detector initalized");
         }
 
@@ -145,7 +135,7 @@ namespace DetectiCam.Core.Detection
                 {
                     //dimensions will be 2 for single image analysis and 3 for batch analysis
                     //2 input Prob Dims:3 images: 0 - 2, 1 - 300, 2 - 85
-                    
+
                     var probabilitiesRange = new Range(prefix, prob.Size(2) - 1);
 
                     for (var i = 0; i < prob.Size(1); i++)

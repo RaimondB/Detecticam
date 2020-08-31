@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using DetectiCam.Core.Common;
+using DetectiCam.Core.Detection;
+using DetectiCam.Core.ResultProcessor;
+using DetectiCam.Core.VideoCapturing;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,22 +11,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using DetectiCam.Core.Detection;
-using DetectiCam.Core.VideoCapturing;
-using DetectiCam.Core.ResultProcessor;
-using DetectiCam.Core.Common;
 
 namespace DetectiCam
 {
 
-    class Program
+    public static class Program
     {
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((hostingContext, config) =>
             {
                 ConfigureConfigDir(hostingContext, config);
-                
+
                 config.AddEnvironmentVariables(prefix: "CAMERAWATCH_");
             })
             .ConfigureWebHostDefaults(webBuilder =>
@@ -80,6 +80,7 @@ namespace DetectiCam
                 configPath = Path.GetFullPath(basePathConfig);
                 if (Directory.Exists(configPath))
                 {
+                    //TODO: Find out how to get logger from static Host
                     //Console.WriteLine($"ConfigDir for configuration:{configPath}");
                     config.AddJsonFile(Path.GetFullPath("appsettings.json", configPath));
                 }

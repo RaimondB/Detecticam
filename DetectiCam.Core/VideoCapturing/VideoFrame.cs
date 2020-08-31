@@ -29,7 +29,7 @@ namespace DetectiCam.Core.VideoCapturing
 
     /// <summary> A video frame produced by the Framegrabber.
     ///     This class encapsulates the image and metadata. </summary>
-    public class VideoFrame : IDisposable, ISyncTokenProvider
+    public sealed class VideoFrame : IDisposable, ISyncTokenProvider
     {
         /// <summary> Constructor. </summary>
         /// <param name="image">    The image captured by the camera. </param>

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -25,11 +24,11 @@ namespace DetectiCam.Core.VideoCapturing
             _outputWriter = outputWriter;
             _logger = logger;
             _internalCts = new CancellationTokenSource();
-            //_internalCts.CancelAfter(2000);
         }
 
         public async Task ExecuteProcessingAsync(CancellationToken stoppingToken)
         {
+            //TODO: validate performance difference of using Task.Run or not.
             //_mergeTask = Task.Run(async () =>
             //{
             try
@@ -55,7 +54,7 @@ namespace DetectiCam.Core.VideoCapturing
                             try
                             {
                                 maxToken = await ReadInputAtIndex(results, index, maxToken, linkedToken).ConfigureAwait(false);
-                                if(maxToken.HasValue) resultCount++;
+                                if (maxToken.HasValue) resultCount++;
                             }
                             catch (ChannelClosedException)
                             {
@@ -93,7 +92,7 @@ namespace DetectiCam.Core.VideoCapturing
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in merger");
                 throw;
@@ -149,6 +148,12 @@ namespace DetectiCam.Core.VideoCapturing
         }
 
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
         {
             _internalCts?.Dispose();
         }

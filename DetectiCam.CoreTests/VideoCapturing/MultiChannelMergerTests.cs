@@ -1,15 +1,12 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using DetectiCam.Core.VideoCapturing;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Channels;
-using Microsoft.VisualStudio.TestTools.UnitTesting.Logging;
-using Microsoft.Extensions.Logging;
-using Moq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Linq;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace DetectiCam.Core.VideoCapturing.Tests
 {
@@ -59,7 +56,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
         {
             var task = _sut.ExecuteProcessingAsync(_cts.Token);
 
-            for(int x = 1; x <= 5; x++)
+            for (int x = 1; x <= 5; x++)
             {
                 await _firstInput.Writer.WriteAsync(x);
             }
@@ -72,7 +69,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             _secondInput.Writer.Complete();
 
             int noResults = 0;
-            await foreach(var result in _output.Reader.ReadAllAsync(_cts.Token))
+            await foreach (var result in _output.Reader.ReadAllAsync(_cts.Token))
             {
                 Assert.AreEqual(2, result.Count);
                 Assert.AreEqual(6, result.Sum());
@@ -83,6 +80,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
         }
 
         [TestMethod()]
+        [ExpectedException(typeof(OperationCanceledException))]
         public async Task StopProcessingAsyncTest()
         {
             var task = _sut.ExecuteProcessingAsync(_cts.Token);
@@ -106,8 +104,9 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             });
 
             await _sut.StopProcessingAsync();
+            await Task.WhenAll(task, firstTask, secondTask);
 
-            if(_output.Reader.TryRead(out var result))
+            if (_output.Reader.TryRead(out var result))
             {
                 Assert.Fail("Read should not succeed because the channel is completed");
             }
@@ -133,7 +132,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
                 for (int y = 5; y >= 2; y--)
                 {
                     await _secondInput.Writer.WriteAsync(y);
-                    if(y==3)
+                    if (y == 3)
                     {
                         _cts.Cancel();
                     }
@@ -141,7 +140,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
                 _secondInput.Writer.Complete();
             });
 
-            await task;
+            await Task.WhenAll(task,firstTask,secondTask);
             Assert.Fail("Should not be here since cancellation will throw");
         }
     }

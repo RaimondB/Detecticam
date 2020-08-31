@@ -1,9 +1,4 @@
-﻿using DetectiCam.Core.Detection;
-using DetectiCam.Core.VideoCapturing;
-using OpenCvSharp;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using DetectiCam.Core.VideoCapturing;
 using System.Threading;
 using System.Threading.Tasks;
 

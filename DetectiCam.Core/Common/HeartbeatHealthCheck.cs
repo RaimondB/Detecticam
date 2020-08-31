@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,11 +11,11 @@ namespace DetectiCam.Core.Common
 
         private readonly TimeSpan _maxHeartbeatTimeout = TimeSpan.FromSeconds(30);
         private DateTimeOffset _lastHeartbeat = DateTimeOffset.Now;
-        private readonly object _heartbeatLock = new object(); 
+        private readonly object _heartbeatLock = new object();
 
         public void ReportHeartbeat()
         {
-            lock(_heartbeatLock)
+            lock (_heartbeatLock)
             {
                 _lastHeartbeat = DateTimeOffset.Now;
             }

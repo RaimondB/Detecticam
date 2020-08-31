@@ -4,10 +4,8 @@ using DetectiCam.Core.VideoCapturing;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -21,7 +19,7 @@ namespace DetectiCam.Core.Pipeline
         private readonly IHeartbeatReporter _heartbeatReporter;
 
         public DnnDetectorChannelTransformer(IBatchedDnnDetector detector,
-            ChannelReader<IList<VideoFrame>> inputReader, 
+            ChannelReader<IList<VideoFrame>> inputReader,
             ChannelWriter<IList<VideoFrame>> outputWriter,
             IHeartbeatReporter heartbeatReporter,
             ILogger logger) :
@@ -36,17 +34,17 @@ namespace DetectiCam.Core.Pipeline
             _detector.Initialize();
         }
 
-        private readonly Stopwatch _stopwatch = new Stopwatch(); 
+        private readonly Stopwatch _stopwatch = new Stopwatch();
 
-        protected override ValueTask<IList<VideoFrame>> ExecuteTransform(IList<VideoFrame> frames, CancellationToken cancellationToken)
+        protected override ValueTask<IList<VideoFrame>> ExecuteTransform(IList<VideoFrame> input, CancellationToken cancellationToken)
         {
-            if (frames is null) throw new ArgumentNullException(nameof(frames));
+            if (input is null) throw new ArgumentNullException(nameof(input));
 
             try
             {
                 Logger.LogDebug("DoAnalysis: started");
 
-                var images = frames.Where(f => f.Image != null).Select(f => f.Image).ToList();
+                var images = input.Where(f => f.Image != null).Select(f => f.Image).ToList();
 
                 IList<DnnDetectedObject[]> result;
 
@@ -64,7 +62,7 @@ namespace DetectiCam.Core.Pipeline
                     for (int i = 0; i < result.Count; i++)
                     {
                         //Attachs results to the right videoframe
-                        frames[i].Metadata.AnalysisResult = result[i];
+                        input[i].Metadata.AnalysisResult = result[i];
                     }
                 }
                 else
@@ -76,10 +74,12 @@ namespace DetectiCam.Core.Pipeline
             }
             catch (Exception ae) when (True(() =>
                     Logger.LogError("DoAnalysis: Exception from analysis task:{message}", ae.Message)))
+#pragma warning disable S108 // Nested blocks of code should not be left empty
             {
             }
+#pragma warning restore S108 // Nested blocks of code should not be left empty
 
-            return new ValueTask<IList<VideoFrame>>(frames);
+            return new ValueTask<IList<VideoFrame>>(input);
         }
     }
 }

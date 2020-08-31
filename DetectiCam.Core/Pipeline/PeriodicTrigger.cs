@@ -1,13 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace DetectiCam.Core.Pipeline
 {
-    public class PeriodicTrigger : IDisposable
+    public sealed class PeriodicTrigger : IDisposable
     {
         private readonly ILogger _logger;
         private readonly List<ITimestampTrigger> _subjects;
@@ -28,7 +26,7 @@ namespace DetectiCam.Core.Pipeline
                 var now = DateTime.Now;
                 triggerId++;
                 _logger.LogInformation("Timer triggered at:{triggerTimestamp} with id:{triggerId}", now, triggerId);
-                foreach(var subject in _subjects)
+                foreach (var subject in _subjects)
                 {
                     subject.ExecuteTrigger(now, triggerId);
                 }
