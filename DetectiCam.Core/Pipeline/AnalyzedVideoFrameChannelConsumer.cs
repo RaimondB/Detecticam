@@ -1,4 +1,5 @@
-﻿using DetectiCam.Core.ResultProcessor;
+﻿using DetectiCam.Core.Detection;
+using DetectiCam.Core.ResultProcessor;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -14,16 +15,20 @@ namespace DetectiCam.Core.VideoCapturing
     public class AnalyzedVideoFrameChannelConsumer : ChannelConsumer<IList<VideoFrame>>
     {
         private readonly List<IAsyncSingleResultProcessor> _resultProcessors;
-
+        private readonly ObjectWhiteList _objectWhitelist;
+        private readonly Dictionary<string, HashSet<string>> _whitelistCache = new Dictionary<string, HashSet<string>>();
 
         public AnalyzedVideoFrameChannelConsumer(ChannelReader<IList<VideoFrame>> inputReader,
             IEnumerable<IAsyncSingleResultProcessor> resultProcessors,
+            ObjectWhiteList objectWhitelist,
             ILogger logger)
             : base(inputReader, logger)
         {
             if (resultProcessors is null) throw new ArgumentNullException(nameof(resultProcessors));
+            if (objectWhitelist is null) throw new ArgumentNullException(nameof(objectWhitelist));
 
             _resultProcessors = new List<IAsyncSingleResultProcessor>(resultProcessors);
+            _objectWhitelist = objectWhitelist;
         }
 
         protected override Task ExecuteProcessorAsync([DisallowNull] IList<VideoFrame> input, CancellationToken cancellationToken)
@@ -48,7 +53,7 @@ namespace DetectiCam.Core.VideoCapturing
                         Logger.LogInformation("New result received for {streamId} frame acquired at {timestamp}.",
                             frame.Metadata.Info.Id, frame.Metadata.Timestamp);
 
-                        if (analysisResult.Count > 0 && analysisResult.Any(o => o.Label == "person"))
+                        if (analysisResult.Count > 0 && HasDetectedWhitelistedObjects(frame))
                         {
                             Logger.LogInformation("Person detected for frame acquired at {timestamp}. Sending to result processors",
                                 frame.Metadata.Timestamp);
@@ -77,6 +82,34 @@ namespace DetectiCam.Core.VideoCapturing
                     frame.Dispose();
                 }
             }
+        }
+
+        private bool HasDetectedWhitelistedObjects(VideoFrame videoFrame)
+        {
+            var detections = videoFrame.Metadata.AnalysisResult.Select(d => d.Label).ToList();
+            var whiteList = GetConsolidatedWhitelist(videoFrame);
+
+            //Will return true if any of the whitelisted object was detected.
+            return whiteList.Overlaps(detections);
+        }
+
+        private HashSet<string> GetConsolidatedWhitelist(VideoFrame frame)
+        {
+            var id = frame.Metadata.Info.Id;
+
+            if (!_whitelistCache.TryGetValue(id, out HashSet<string>? whiteList))
+            {
+                whiteList = this._objectWhitelist.Concat(frame.Metadata.Info.AdditionalObjectWhitelist).Distinct().ToHashSet();
+
+                if(whiteList.Count == 0)
+                {
+                    //If nothing is on the whitelist, we will default to detecting persons
+                    whiteList.Add("person");
+                }
+
+                _whitelistCache.Add(id, whiteList);
+            }
+            return whiteList;
         }
 
         public override Task StopProcessingAsync(CancellationToken cancellationToken)

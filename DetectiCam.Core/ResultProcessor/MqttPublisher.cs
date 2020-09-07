@@ -4,7 +4,9 @@ using DetectiCam.Core.VideoCapturing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using uPLibrary.Networking.M2Mqtt;
@@ -59,7 +61,15 @@ namespace DetectiCam.Core.ResultProcessor
             {
                 if (frame is null) throw new ArgumentNullException(nameof(frame));
 
-                string strValue = "{ \"detection\" : true }";
+                var output = new { detection = true,
+                    detectedObjects = Options.IncludeDetectedObjects ? 
+                        frame.Metadata.AnalysisResult.Select(
+                            (dob,i) => DetectedObject.ConvertFrom(dob)).ToList()
+                        : null 
+                    };
+
+                string strValue = JsonSerializer.Serialize(output); //, "{ \"detection\" : true }";
+
                 string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/state";
 
                 // publish a message on "/home/temperature" topic with QoS 2 

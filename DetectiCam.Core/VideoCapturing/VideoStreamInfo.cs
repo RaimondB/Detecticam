@@ -1,7 +1,6 @@
-﻿#nullable enable
-
-using OpenCvSharp;
+﻿using OpenCvSharp;
 using System;
+using DetectiCam.Core.Detection;
 
 namespace DetectiCam.Core.VideoCapturing
 {
@@ -33,8 +32,10 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
-        public Uri? CallbackUrl { get; set; }
+        public string? CallbackUrl { get; set; }
 
         public RotateFlags? RotateFlags { get; set; }
+
+        public ObjectWhiteList AdditionalObjectWhitelist { get; } = new ObjectWhiteList();
     }
 }

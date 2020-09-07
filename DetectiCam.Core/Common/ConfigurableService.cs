@@ -18,9 +18,16 @@ namespace DetectiCam.Core.Common
 
             Logger = logger;
 
+            Options = GetValidatedOptions(options);
+        }
+
+        protected T GetValidatedOptions<T>(IOptions<T> options) where T: class,new()
+        {
+            if (options is null) throw new ArgumentNullException(nameof(options));
+
             try
             {
-                Options = options.Value;
+                return options.Value;
             }
             catch (OptionsValidationException ex)
             {

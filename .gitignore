@@ -256,6 +256,7 @@ paket-files/
 YoloData
 appsettings.Development*.json
 docker-test
+DetectiCam/captures
 
 #Sonar
 .sonarqube

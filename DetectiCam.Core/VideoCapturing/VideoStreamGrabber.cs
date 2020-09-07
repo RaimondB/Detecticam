@@ -42,7 +42,7 @@ namespace DetectiCam.Core.VideoCapturing
             new BoundedChannelOptions(1)
             {
                 FullMode = BoundedChannelFullMode.DropOldest,
-                AllowSynchronousContinuations = true,
+                AllowSynchronousContinuations = false,
                 SingleReader = true,
                 SingleWriter = true
             });

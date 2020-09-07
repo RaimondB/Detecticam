@@ -40,6 +40,10 @@ namespace DetectiCam
                 services.AddOptions<VideoStreamsOptions>()
                     .Bind(hostContext.Configuration.GetSection(VideoStreamsOptions.VideoStreams))
                     .ValidateDataAnnotations();
+                services.AddOptions<DetectionOptions>()
+                    .Bind(hostContext.Configuration.GetSection(DetectionOptions.Detection))
+                    .ValidateDataAnnotations();
+
 
                 var generateConfig = hostContext.Configuration.GetValue<bool>("gen-config");
                 if (generateConfig)

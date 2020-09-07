@@ -17,8 +17,10 @@ namespace DetectiCam.Core.Pipeline
     {
         private readonly IBatchedDnnDetector _detector;
         private readonly IHeartbeatReporter _heartbeatReporter;
+        private readonly float _detectionThreshold;
 
         public DnnDetectorChannelTransformer(IBatchedDnnDetector detector,
+            float detectionThreshold,
             ChannelReader<IList<VideoFrame>> inputReader,
             ChannelWriter<IList<VideoFrame>> outputWriter,
             IHeartbeatReporter heartbeatReporter,
@@ -28,8 +30,8 @@ namespace DetectiCam.Core.Pipeline
             if (detector is null) throw new ArgumentNullException(nameof(detector));
             if (heartbeatReporter is null) throw new ArgumentNullException(nameof(heartbeatReporter));
 
+            _detectionThreshold = detectionThreshold;
             _heartbeatReporter = heartbeatReporter;
-
             _detector = detector;
             _detector.Initialize();
         }
@@ -52,7 +54,7 @@ namespace DetectiCam.Core.Pipeline
                 {
                     _stopwatch.Restart();
 
-                    result = _detector.ClassifyObjects(images);
+                    result = _detector.ClassifyObjects(images, _detectionThreshold);
 
                     _stopwatch.Stop();
                     Logger.LogInformation("Classifiy-objects ms:{classifyDuration} for {imageCount} images", _stopwatch.ElapsedMilliseconds, images.Count);

@@ -64,11 +64,6 @@ namespace DetectiCam.Core.ResultProcessor
             }
         }
 
-        private static string GetTimestampedSortable(VideoFrameContext metaData)
-        {
-            return $"{metaData.Timestamp:yyyyMMddTHHmmss}";
-        }
-
         public Task ProcessResultAsync(VideoFrame frame)
         {
             //If not enabled, skip this processor.
@@ -89,11 +84,7 @@ namespace DetectiCam.Core.ResultProcessor
             Logger.LogInformation("Detected: {detectionstats}", stats);
 
 
-            var filename = Options.CapturePattern;
-            filename = ReplaceTsToken(filename, frame);
-            filename = ReplaceVsIdToken(filename, frame);
-            filename = ReplaceDateTimeTokens(filename, frame);
-
+            var filename = TagReplacer.ReplaceTags(Options.CapturePattern, frame);
 
             var filePath = Path.Combine(_captureRootPath, filename);
             EnsureDirectoryPath(filePath);
@@ -111,28 +102,6 @@ namespace DetectiCam.Core.ResultProcessor
             return Task.CompletedTask;
         }
 
-        private static string ReplaceTsToken(string filePattern, VideoFrame frame)
-        {
-            string ts = GetTimestampedSortable(frame.Metadata);
-
-            return filePattern.Replace("{ts}", ts, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string ReplaceVsIdToken(string filePattern, VideoFrame frame)
-        {
-            return filePattern.Replace("{vsid}", frame.Metadata.Info.Id, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static readonly Regex _patternMatcher = new Regex(@"(\{.+\})", RegexOptions.Compiled);
-
-        private static string ReplaceDateTimeTokens(string filePattern, VideoFrame frame)
-        {
-            var ts = frame.Metadata.Timestamp;
-
-            var result = _patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{', '}'), CultureInfo.CurrentCulture));
-
-            return result;
-        }
 
 
         public Task StopProcessingAsync(CancellationToken cancellationToken)

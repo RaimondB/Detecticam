@@ -1,4 +1,5 @@
-﻿using DetectiCam.Core.VideoCapturing;
+﻿using DetectiCam.Core.Common;
+using DetectiCam.Core.VideoCapturing;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http;
@@ -28,12 +29,29 @@ namespace DetectiCam.Core.ResultProcessor
 
         private async Task ProcessResultInternalAsync(VideoFrame frame)
         {
-            var url = frame.Metadata.Info.CallbackUrl;
-            if (url != null)
+            var urlTemplate = frame.Metadata.Info.CallbackUrl;
+            if (urlTemplate != null)
             {
                 _logger.LogInformation("Webhook notify for {streamId}", frame.Metadata.Info.Id);
-                using var client = _clientFactory.CreateClient();
-                await client.GetAsync(url).ConfigureAwait(false);
+
+                var replacedUrl = TagReplacer.ReplaceTags(urlTemplate, frame);
+                try
+                {
+                    var uri = new Uri(replacedUrl);
+
+                    using var client = _clientFactory.CreateClient();
+                    await client.GetAsync(uri).ConfigureAwait(false);
+                }
+                catch(UriFormatException ex)
+                {
+                    _logger.LogError(ex, "Invalid CallbackUrl for {streamId}:{callbackUrl}", 
+                        frame.Metadata.Info.Id, replacedUrl);
+                }
+                catch(HttpRequestException hre)
+                {
+                    _logger.LogError(hre, "Error in http call for {streamId}:{callbackUrl}",
+                        frame.Metadata.Info.Id, replacedUrl);
+                }
             }
         }
 
