@@ -1,7 +1,4 @@
 ﻿using OpenCvSharp;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace DetectiCam.Core.ResultProcessor
 {
@@ -12,7 +9,7 @@ namespace DetectiCam.Core.ResultProcessor
         public int Width { get; set; }
         public int Height { get; set; }
 
-        public static BoundingBox FromRect2D(Rect2d input)
+        public static BoundingBox ConvertFrom(Rect2d input)
         {
             return new BoundingBox()
             {

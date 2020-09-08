@@ -38,11 +38,13 @@ namespace DetectiCam.Core.VideoCapturing
                     await ExecuteProcessorAsync(inputValue, linkedToken).ConfigureAwait(false);
                 }
             }
+#pragma warning disable S2737 // "catch" clauses should do more than rethrow
             catch (OperationCanceledException) when (False(() =>
                  Logger.LogWarning("Consume operation cancelled")))
             {
                 throw;
             }
+#pragma warning restore S2737 // "catch" clauses should do more than rethrow
             finally
             {
                 Logger.LogInformation("Stopping:completing consumer channel!");

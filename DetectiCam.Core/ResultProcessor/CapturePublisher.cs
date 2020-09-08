@@ -7,10 +7,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenCvSharp;
 using System;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -101,8 +99,6 @@ namespace DetectiCam.Core.ResultProcessor
             }
             return Task.CompletedTask;
         }
-
-
 
         public Task StopProcessingAsync(CancellationToken cancellationToken)
         {

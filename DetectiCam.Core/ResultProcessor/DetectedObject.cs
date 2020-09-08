@@ -1,7 +1,5 @@
 ﻿using DetectiCam.Core.Detection;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace DetectiCam.Core.ResultProcessor
 {
@@ -18,7 +16,7 @@ namespace DetectiCam.Core.ResultProcessor
 
             return new DetectedObject()
             {
-                BoundingBox = BoundingBox.FromRect2D(dnnDetectedObject.BoundingBox),
+                BoundingBox = BoundingBox.ConvertFrom(dnnDetectedObject.BoundingBox),
                 Index = dnnDetectedObject.Index,
                 Label = dnnDetectedObject.Label,
                 Probability = dnnDetectedObject.Probability
