@@ -63,12 +63,19 @@ namespace DetectiCam.Core.ResultProcessor
 
                 var output = new { detection = true,
                     detectedObjects = Options.IncludeDetectedObjects ? 
-                        frame.Metadata.AnalysisResult.Select(
-                            (dob,i) => DetectedObject.ConvertFrom(dob)).ToList()
+                        frame.Metadata.AnalysisResult
+                            .OrderByDescending(r => r.Probability)
+                            .Take(Options.TopDetectedObjectsLimit)
+                            .Select((dob,i) => DetectedObject.ConvertFrom(dob))
+                            .ToList()
                         : null 
                     };
 
-                string strValue = JsonSerializer.Serialize(output); //, "{ \"detection\" : true }";
+                string strValue = JsonSerializer.Serialize(output,
+                    new JsonSerializerOptions()
+                    {
+                        IgnoreNullValues = true
+                    });
 
                 string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/state";
 

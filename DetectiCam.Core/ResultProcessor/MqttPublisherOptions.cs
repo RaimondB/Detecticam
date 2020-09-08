@@ -16,5 +16,6 @@ namespace DetectiCam.Core.Detection
         public string? TopicPrefix { get; set; }
         public string? ClientId { get; set; }
         public bool IncludeDetectedObjects { get; set; }
+        public int TopDetectedObjectsLimit { get; set; } = 3;
     }
 }

@@ -34,7 +34,7 @@ namespace DetectiCam.Core.ResultProcessor
             {
                 _logger.LogInformation("Webhook notify for {streamId}", frame.Metadata.Info.Id);
 
-                var replacedUrl = TagReplacer.ReplaceTags(urlTemplate, frame);
+                var replacedUrl = TokenReplacer.ReplaceTokens(urlTemplate, frame);
                 try
                 {
                     var uri = new Uri(replacedUrl);

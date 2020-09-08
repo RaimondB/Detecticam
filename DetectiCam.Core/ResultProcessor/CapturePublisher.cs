@@ -84,7 +84,7 @@ namespace DetectiCam.Core.ResultProcessor
             Logger.LogInformation("Detected: {detectionstats}", stats);
 
 
-            var filename = TagReplacer.ReplaceTags(Options.CapturePattern, frame);
+            var filename = TokenReplacer.ReplaceTokens(Options.CapturePattern, frame);
 
             var filePath = Path.Combine(_captureRootPath, filename);
             EnsureDirectoryPath(filePath);

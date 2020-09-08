@@ -8,11 +8,11 @@ using System.Text.RegularExpressions;
 
 namespace DetectiCam.Core.Common
 {
-    public static class TagReplacer
+    public static class TokenReplacer
     {
         private static readonly Regex _patternMatcher = new Regex(@"(\{.+\})", RegexOptions.Compiled);
 
-        public static string ReplaceTags(string pattern, VideoFrame frame)
+        public static string ReplaceTokens(string pattern, VideoFrame frame)
         {
             if (pattern is null) throw new ArgumentNullException(nameof(pattern));
             if (frame is null) throw new ArgumentNullException(nameof(frame));
@@ -30,37 +30,37 @@ namespace DetectiCam.Core.Common
             return $"{metaData.Timestamp:yyyyMMddTHHmmss}";
         }
 
-        private static string ReplaceTsToken(string filePattern, VideoFrame frame)
+        private static string ReplaceTsToken(string pattern, VideoFrame frame)
         {
             string ts = GetTimestampedSortable(frame.Metadata);
 
-            return filePattern.Replace("{ts}", ts, StringComparison.OrdinalIgnoreCase);
+            return pattern.Replace("{ts}", ts, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string ReplaceVsIdToken(string filePattern, VideoFrame frame)
+        private static string ReplaceVsIdToken(string pattern, VideoFrame frame)
         {
-            return filePattern.Replace("{vsid}", frame.Metadata.Info.Id, StringComparison.OrdinalIgnoreCase);
+            return pattern.Replace("{vsid}", frame.Metadata.Info.Id, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string ReplaceDetectedObjectsToken(string filePattern, VideoFrame frame)
+        private static string ReplaceDetectedObjectsToken(string pattern, VideoFrame frame)
         {
-            if (filePattern.Contains("{dobj}", StringComparison.OrdinalIgnoreCase))
+            if (pattern.Contains("{dobj}", StringComparison.OrdinalIgnoreCase))
             {
                 var objectList = String.Join(',', frame.Metadata.AnalysisResult.Select(d => d.Label).Distinct());
 
-                return filePattern.Replace("{dobj}", objectList, StringComparison.OrdinalIgnoreCase);
+                return pattern.Replace("{dobj}", objectList, StringComparison.OrdinalIgnoreCase);
             }
             else
             {
-                return filePattern;
+                return pattern;
             }
         }
 
-        private static string ReplaceDateTimeTokens(string filePattern, VideoFrame frame)
+        private static string ReplaceDateTimeTokens(string pattern, VideoFrame frame)
         {
             var ts = frame.Metadata.Timestamp;
 
-            var result = _patternMatcher.Replace(filePattern, (m) => ts.ToString(m.Value.Trim('{', '}'), CultureInfo.CurrentCulture));
+            var result = _patternMatcher.Replace(pattern, (m) => ts.ToString(m.Value.Trim('{', '}'), CultureInfo.CurrentCulture));
 
             return result;
         }
