@@ -17,6 +17,8 @@ solution: DetectiCam.sln
 
 jobs:
   include:
+    - stage: "Check Dependencies"
+        - dotnet restore
     - stage: "Build" 
       name: "Build & Publish Code Analysis"
       script:
