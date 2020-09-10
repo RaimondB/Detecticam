@@ -28,4 +28,6 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           MERGE_LABELS: "dependencies,!work in progress"
+          UPDATE_LABELS: "dependencies,!work in progress"
+          UPDATE_METHOD: "rebase"
 
