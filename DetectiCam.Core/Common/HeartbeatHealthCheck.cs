@@ -5,7 +5,11 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Core.Common
 {
+#pragma warning disable S2326 // Unused type parameters should be removed
+    //Using T allows for a different Type for each hearbeatcheck without requiring to create a instance.
+    //This makes the DI easier to do.
     public class HeartbeatHealthCheck<T> : IHealthCheck, IHeartbeatReporter
+#pragma warning restore S2326 // Unused type parameters should be removed
     {
         public string Name => "heartbeat_check";
 

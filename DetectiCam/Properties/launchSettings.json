@@ -1,7 +1,7 @@
 {
   "profiles": {
     "CoreConsole": {
-      "commandName": "Executable",
+      "commandName": "Project",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }

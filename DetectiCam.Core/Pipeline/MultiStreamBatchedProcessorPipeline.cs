@@ -23,6 +23,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         private readonly List<VideoStreamGrabber> _streams = new List<VideoStreamGrabber>();
         private readonly VideoStreamsOptions _streamsConfig;
+        private readonly DetectionOptions _detectionOptions;
 
         private readonly IBatchedDnnDetector _detector;
         private readonly HeartbeatHealthCheck<MultiStreamBatchedProcessorPipeline> _healthCheck;
@@ -32,6 +33,7 @@ namespace DetectiCam.Core.VideoCapturing
 
         public MultiStreamBatchedProcessorPipeline([DisallowNull] ILogger<MultiStreamBatchedProcessorPipeline> logger,
                                               IOptions<VideoStreamsOptions> options,
+                                              IOptions<DetectionOptions> detectionOptions,
                                               HeartbeatHealthCheck<MultiStreamBatchedProcessorPipeline> healthCheck,
                                               IBatchedDnnDetector detector,
                                               IEnumerable<IAsyncSingleResultProcessor> resultProcessors) :
@@ -46,6 +48,7 @@ namespace DetectiCam.Core.VideoCapturing
             _healthCheck = healthCheck;
 
             _streamsConfig = Options;
+            _detectionOptions = GetValidatedOptions(detectionOptions);
 
             Logger.LogInformation("Loaded configuration for {numberOfStreams} streams:{streamIds}",
                 _streamsConfig.Count,
@@ -145,11 +148,14 @@ namespace DetectiCam.Core.VideoCapturing
             var mergerTask = _merger.ExecuteProcessingAsync(cancellationToken);
 
             _analyzer = new DnnDetectorChannelTransformer(_detector,
+                _detectionOptions.DetectionThreshold,
                 analysisChannel.Reader, outputChannel.Writer, _healthCheck, Logger);
             var analyzerTask = _analyzer.ExecuteProcessingAsync(cancellationToken);
 
             _resultPublisher = new AnalyzedVideoFrameChannelConsumer(
-                outputChannel.Reader, _resultProcessors, Logger);
+                outputChannel.Reader, _resultProcessors, 
+                _detectionOptions.ObjectWhiteList,
+                Logger);
             var resultPublisherTask = _resultPublisher.ExecuteProcessingAsync(cancellationToken);
 
             Logger.LogInformation("Start processing pipeline");

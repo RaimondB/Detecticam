@@ -21,7 +21,6 @@ namespace DetectiCam.Core.Detection
         private readonly Mat[] outs;
         private readonly string[] _outNames;
 
-        private const float threshold = 0.5f;       //for confidence 
         private const float nmsThreshold = 0.3f;    //threshold for nms
 
         public YoloBatchedDnnDetector(ILogger<YoloBatchedDnnDetector> logger, IConfiguration configuration)
@@ -69,14 +68,14 @@ namespace DetectiCam.Core.Detection
                 dummy1,
                 dummy2
             };
-            ClassifyObjects(images);
+            ClassifyObjects(images, 0.5f);
             _logger.LogInformation("Detector initalized");
         }
 
         private const double scaleFactor = 1.0 / 255;
         private readonly Size scaleSize = new Size(320, 320);
 
-        public IList<DnnDetectedObject[]> ClassifyObjects(IList<Mat> images)
+        public IList<DnnDetectedObject[]> ClassifyObjects(IList<Mat> images, float detectionThreshold)
         {
             if (images is null) throw new ArgumentNullException(nameof(images));
 
@@ -93,11 +92,11 @@ namespace DetectiCam.Core.Detection
 
             if (images.Count == 1)
             {
-                return ExtractYoloSingleResults(outs, images[0], threshold, nmsThreshold);
+                return ExtractYoloSingleResults(outs, images[0], detectionThreshold, nmsThreshold);
             }
             else
             {
-                return ExtractYoloBatchedResults(outs, images, threshold, nmsThreshold);
+                return ExtractYoloBatchedResults(outs, images, detectionThreshold, nmsThreshold);
             }
         }
 
