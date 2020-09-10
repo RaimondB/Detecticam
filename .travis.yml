@@ -13,7 +13,7 @@ solution: DetectiCam.sln
 #    if: branch != master
 
 # Commented to try out the sonar branch based approach.
-
+#
 
 jobs:
   include:
