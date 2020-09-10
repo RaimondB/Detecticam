@@ -25,4 +25,5 @@ jobs:
         - dotnet test
         - dotnet tool run dotnet-sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
     - stage: "Build Docker Image & Test"
+      script:
         - docker-compose -f DetectiCam/docker-compose.test.yml run sut
