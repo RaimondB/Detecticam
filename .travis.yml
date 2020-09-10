@@ -1,6 +1,8 @@
 language: csharp
 mono: none
 dotnet: 3.1
+services:
+  - docker
 
 solution: DetectiCam.sln
 
@@ -22,7 +24,5 @@ jobs:
         - dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="${SONAR_TOKEN}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="${TRAVIS_BRANCH}"
         - dotnet test
         - dotnet tool run dotnet-sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
-#    - stage: "Build"
-#     script:
-#       - dotnet restore
-#       - dotnet test  
+    - stage: "Build Docker Image & Test"
+        - docker-compose -f DetectiCam/docker-compose.test.yml run sut
