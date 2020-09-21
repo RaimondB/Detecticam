@@ -50,12 +50,11 @@ namespace DetectiCam.Core.Detection
             _outNames = nnet.GetUnconnectedOutLayersNames()!;
 
             outs = Enumerable.Repeat(false, _outNames.Length).Select(_ => new Mat()).ToArray();
-            Logger.LogInformation("Warm Up Neural Net with Dummy images");
         }
 
         public void Initialize()
         {
-            Logger.LogInformation("Start Detector initalize");
+            Logger.LogInformation("Start Detector initalize & warmup");
             using Mat dummy1 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
             using Mat dummy2 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
 
@@ -74,7 +73,8 @@ namespace DetectiCam.Core.Detection
         public IList<DnnDetectedObject[]> ClassifyObjects(IList<VideoFrame> frames, float detectionThreshold)
         {
             if (frames is null) throw new ArgumentNullException(nameof(frames));
-
+            
+            //Crop frame to ROI if speficied
             var imageInfos = frames.Where(f => f.Image != null).Select(f =>
             {
                 var roi = _roiConfig.GetValueOrDefault(f.Metadata.Info.Id, null);
@@ -86,8 +86,10 @@ namespace DetectiCam.Core.Detection
                 };
             }).ToList();
 
+            //Execute the core detection
             var detectedObjects = InternalClassifyObjects(imageInfos.Select(f => f.Image).ToList(), detectionThreshold);
 
+            //Correct detected objects location based on ROI (shift relative to topleft of ROI)
             var correctedObjects = detectedObjects.Zip(imageInfos, (dobjs, inf) =>
                 inf.ROI == null ? dobjs : dobjs.Select(dobj => {
                     var bb = dobj.BoundingBox;
@@ -95,6 +97,12 @@ namespace DetectiCam.Core.Detection
                     return dobj;
                 }).ToArray()                                                                                                      
             ).ToList();
+
+            //Cleanup the cropped images, since they are no longer needed
+            foreach (var croppedImage in imageInfos.Where(io => io.ROI != null).Select(io => io.Image))
+            {
+                croppedImage.SafeDispose();
+            }
 
             return correctedObjects;
         }
