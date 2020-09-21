@@ -43,6 +43,9 @@ namespace DetectiCam
                 services.AddOptions<DetectionOptions>()
                     .Bind(hostContext.Configuration.GetSection(DetectionOptions.Detection))
                     .ValidateDataAnnotations();
+                services.AddOptions<Yolo3Options>()
+                    .Bind(hostContext.Configuration.GetSection(Yolo3Options.Yolo3))
+                    .ValidateDataAnnotations();
 
 
                 var generateConfig = hostContext.Configuration.GetValue<bool>("gen-config");

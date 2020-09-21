@@ -1,6 +1,7 @@
 ﻿using OpenCvSharp;
 using System;
 using DetectiCam.Core.Detection;
+using DetectiCam.Core.ResultProcessor;
 
 namespace DetectiCam.Core.VideoCapturing
 {
@@ -37,6 +38,11 @@ namespace DetectiCam.Core.VideoCapturing
 #pragma warning restore CA1056 // URI-like properties should not be strings
 
         public RotateFlags? RotateFlags { get; set; }
+
+        /// <summary>
+        /// The Region of Interest within which to report detections.
+        /// </summary>
+        public Region? ROI { get; set; }
 
         public ObjectWhiteList AdditionalObjectWhitelist { get; } = new ObjectWhiteList();
     }

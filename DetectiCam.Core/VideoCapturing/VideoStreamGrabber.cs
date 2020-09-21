@@ -134,6 +134,8 @@ namespace DetectiCam.Core.VideoCapturing
 
                 try
                 {
+                    bool firstTime = true; 
+
                     while (!linkedToken.IsCancellationRequested)
                     {
                         int frameCount = 0;
@@ -153,11 +155,10 @@ namespace DetectiCam.Core.VideoCapturing
                                 switch (result)
                                 {
                                     case GrabResult.Succeeded:
-                                        if (frameCount == 1) capstureStartedTcs.SetResult(true);
-                                        Thread.Sleep(delayMs);
+                                        if (firstTime) capstureStartedTcs.SetResult(true);
                                         break;
                                     case GrabResult.FailAbort:
-                                        if (frameCount == 1) capstureStartedTcs.SetException(new Exception($"Capturing failed for: {this.Info.Id}"));
+                                        if (firstTime) capstureStartedTcs.SetException(new Exception($"Capturing failed for: {this.Info.Id}"));
                                         _internalCts.Cancel();
                                         break;
                                     case GrabResult.FailedRetry:
@@ -166,13 +167,15 @@ namespace DetectiCam.Core.VideoCapturing
                                         restart = true;
                                         break;
                                 }
+                                Thread.Sleep(delayMs);
+                                firstTime = false;
                             }
                         }
 #pragma warning disable CA1031 // Do not catch general exception types
                         catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
                         {
-                            if (frameCount == 1) capstureStartedTcs.SetException(ex);
+                            if (firstTime) capstureStartedTcs.SetException(ex);
                             _logger.LogError(ex, "Exception in processes videostream {name}, restarting", this.StreamName);
                         }
                     }
