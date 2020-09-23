@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -46,18 +45,16 @@ namespace DetectiCam.Core.Pipeline
             {
                 Logger.LogDebug("DoAnalysis: started");
 
-                var images = input.Where(f => f.Image != null).Select(f => f.Image).ToList();
-
                 IList<DnnDetectedObject[]> result;
 
-                if (images.Count > 0)
+                if (input.Count > 0)
                 {
                     _stopwatch.Restart();
 
-                    result = _detector.ClassifyObjects(images, _detectionThreshold);
+                    result = _detector.ClassifyObjects(input, _detectionThreshold);
 
                     _stopwatch.Stop();
-                    Logger.LogInformation("Classifiy-objects ms:{classifyDuration} for {imageCount} images", _stopwatch.ElapsedMilliseconds, images.Count);
+                    Logger.LogInformation("Classifiy-objects ms:{classifyDuration} for {imageCount} images", _stopwatch.ElapsedMilliseconds, input.Count);
 
                     _heartbeatReporter.ReportHeartbeat();
 

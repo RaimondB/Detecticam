@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using DetectiCam.Core.Common;
+using DetectiCam.Core.VideoCapturing;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OpenCvSharp;
 using OpenCvSharp.Dnn;
 using System;
@@ -10,37 +12,31 @@ using Range = OpenCvSharp.Range;
 
 namespace DetectiCam.Core.Detection
 {
-    public sealed class YoloBatchedDnnDetector : IBatchedDnnDetector
+    public sealed class YoloBatchedDnnDetector : ConfigurableService<YoloBatchedDnnDetector, Yolo3Options>, IBatchedDnnDetector
     {
-        private readonly ILogger _logger;
-
-
         private readonly Scalar[] Colors;
         private readonly string[] Labels;
         private readonly OpenCvSharp.Dnn.Net nnet;
         private readonly Mat[] outs;
         private readonly string[] _outNames;
+        private readonly Dictionary<string, Region?> _roiConfig;
 
         private const float nmsThreshold = 0.3f;    //threshold for nms
 
-        public YoloBatchedDnnDetector(ILogger<YoloBatchedDnnDetector> logger, IConfiguration configuration)
+        public YoloBatchedDnnDetector(ILogger<YoloBatchedDnnDetector> logger, IOptions<Yolo3Options> yoloOptions, IOptions<VideoStreamsOptions> streamOptions) :
+            base(logger, yoloOptions)
         {
-            if (configuration is null) throw new ArgumentNullException(nameof(configuration));
-            if (logger is null) throw new ArgumentNullException(nameof(logger));
-
-            _logger = logger;
-
-            var options = new Yolo3Options();
-            configuration.GetSection(Yolo3Options.Yolo3).Bind(options);
+            _roiConfig = GetValidatedOptions<VideoStreamsOptions>(streamOptions).
+                ToDictionary(o => o.Id, o => o.ROI);
 
             //YOLOv3 Fiel locations
             //Cfg: https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg
             //Weight: https://pjreddie.com/media/files/yolov3.weights
             //Names: https://github.com/pjreddie/darknet/blob/master/data/coco.names
 
-            var cfg = Path.Combine(options.RootPath, options.ConfigFile);
-            var weight = Path.Combine(options.RootPath, options.WeightsFile);
-            var names = Path.Combine(options.RootPath, options.NamesFile);
+            var cfg = Path.Combine(Options.RootPath, Options.ConfigFile);
+            var weight = Path.Combine(Options.RootPath, Options.WeightsFile);
+            var names = Path.Combine(Options.RootPath, Options.NamesFile);
 
             //random assign color to each label
             Labels = File.ReadAllLines(names).ToArray();
@@ -48,18 +44,17 @@ namespace DetectiCam.Core.Detection
             //get labels from coco.names
             Colors = Enumerable.Repeat(false, Labels.Length).Select(x => Scalar.RandomColor()).ToArray();
 
-            _logger.LogInformation("Loading Neural Net");
+            Logger.LogInformation("Loading Neural Net");
             nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(cfg, weight);
 
             _outNames = nnet.GetUnconnectedOutLayersNames()!;
 
             outs = Enumerable.Repeat(false, _outNames.Length).Select(_ => new Mat()).ToArray();
-            _logger.LogInformation("Warm Up Neural Net with Dummy images");
         }
 
         public void Initialize()
         {
-            _logger.LogInformation("Start Detector initalize");
+            Logger.LogInformation("Start Detector initalize & warmup");
             using Mat dummy1 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
             using Mat dummy2 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
 
@@ -68,22 +63,53 @@ namespace DetectiCam.Core.Detection
                 dummy1,
                 dummy2
             };
-            ClassifyObjects(images, 0.5f);
-            _logger.LogInformation("Detector initalized");
+            InternalClassifyObjects(images, 0.5f);
+            Logger.LogInformation("Detector initalized");
         }
 
         private const double scaleFactor = 1.0 / 255;
         private readonly Size scaleSize = new Size(320, 320);
 
-        public IList<DnnDetectedObject[]> ClassifyObjects(IList<Mat> images, float detectionThreshold)
+        public IList<DnnDetectedObject[]> ClassifyObjects(IList<VideoFrame> frames, float detectionThreshold)
         {
-            if (images is null) throw new ArgumentNullException(nameof(images));
-
-            foreach (var image in images)
+            if (frames is null) throw new ArgumentNullException(nameof(frames));
+            
+            //Crop frame to ROI if speficied
+            var imageInfos = frames.Where(f => f.Image != null).Select(f =>
             {
-                if (image?.Empty() == true) throw new ArgumentNullException(nameof(images), "One of the images is not initialized");
+                var roi = _roiConfig.GetValueOrDefault(f.Metadata.Info.Id, null);
+                if (roi != null) Logger.LogDebug("Cropping for {vsid}", f.Metadata.Info.Id);
+                return new
+                {
+                    Image = roi == null ? f.Image : f.Image[new Range(roi.Top, roi.Bottom), new Range(roi.Left, roi.Right)],
+                    ROI = roi
+                };
+            }).ToList();
+
+            //Execute the core detection
+            var detectedObjects = InternalClassifyObjects(imageInfos.Select(f => f.Image).ToList(), detectionThreshold);
+
+            //Correct detected objects location based on ROI (shift relative to topleft of ROI)
+            var correctedObjects = detectedObjects.Zip(imageInfos, (dobjs, inf) =>
+                inf.ROI == null ? dobjs : dobjs.Select(dobj => {
+                    var bb = dobj.BoundingBox;
+                    dobj.BoundingBox = new Rect2d(bb.X + inf.ROI.Left, bb.Y + inf.ROI.Top, bb.Width, bb.Height);
+                    return dobj;
+                }).ToArray()                                                                                                      
+            ).ToList();
+
+            //Cleanup the cropped images, since they are no longer needed
+            foreach (var croppedImage in imageInfos.Where(io => io.ROI != null).Select(io => io.Image))
+            {
+                croppedImage.SafeDispose();
             }
 
+            return correctedObjects;
+        }
+
+
+        private IList<DnnDetectedObject[]> InternalClassifyObjects(IList<Mat> images, float detectionThreshold)
+        { 
             using var blob = CvDnn.BlobFromImages(images, scaleFactor, scaleSize, crop: false);
             nnet.SetInput(blob);
 
@@ -260,7 +286,7 @@ namespace DetectiCam.Core.Detection
             {
                 //using non-maximum suppression to reduce overlapping low confidence box
                 CvDnn.NMSBoxes(_boxes, _confidences, threshold, nmsThreshold, out indices);
-                _logger.LogDebug("NMSBoxes drop {overlappingResults} overlapping result.",
+                Logger.LogDebug("NMSBoxes drop {overlappingResults} overlapping result.",
                     _confidences.Count - indices.Length);
             }
 

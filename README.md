@@ -65,6 +65,7 @@ Only the id and path are required. A path can be a videostream file (need to be 
       "rotate": "Rotate90Clockwise",
       "fps": 15,
       "callbackUrl": "http:\/\/nas.home:5000\/webapi\/entry.cgi?api=SYNO.SurveillanceStation.Webhook&method=\"Incoming\"&version=1&token=x",
+      "ROI": { "Left": 0, "Top": 172, "Right" : 479, "Bottom" : 639 },
       "additionalObjectWhitelist": [ "cat" ]
     }
   ]
@@ -75,6 +76,7 @@ Only the id and path are required. A path can be a videostream file (need to be 
 * *path*: Mandatory file, http or rstp stream. Please check the docs of you IP-cam on the correct format.
 * *rotate*: Optional, when left out no rotation happens. Can be usefull if your cam does not support rotation natively.
 * *fps*: Optional, only needed if the log shows that the settings cannot be picked up from the stream. If nothing can be found, and not specified, defaults to 30.
+* *ROI*: Optional, used to restrict the detection area (region of interest) on the video (after rotation)
 * *callbackUrl*: Optional, webhook to trigger on detection
 * *additionalObjectWhitelist*: Optional, additional classes to detect specific on this videostream on top of the global list.
 
