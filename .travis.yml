@@ -23,6 +23,8 @@ jobs:
     - docker-compose -f DetectiCam/docker-compose.test.yml run sut
   
 deploy:
+  provider: script
+  skip_cleanup: true
   script: 
     - docker -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
     - npm install -g npm
