@@ -21,9 +21,11 @@ jobs:
   - name: Build Docker Image & Test
     script:
     - docker-compose -f DetectiCam/docker-compose.test.yml run sut
-  - stage: Deploy
-    script: 
+#  - stage: Deploy
+#    script: 
     - docker tag detecticam_sut:latest raimondb/detect-i-cam
+    - npm install -g npm
+    - npm install
     - npx semantic-release --dry-run
 #      on:
 #        branch: master
