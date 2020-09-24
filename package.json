@@ -1,0 +1,35 @@
+{
+  "name": "detecticam",
+  "version": "1.0.0",
+  "description": "Yolo based object detection on videofeeds",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RaimondB/Detecticam.git"
+  },
+  "author": "Raimond Brookman",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/RaimondB/Detecticam/issues"
+  },
+  "homepage": "https://github.com/RaimondB/Detecticam#readme",
+  "devDependencies": {
+    "@semantic-release/commit-analyzer": "^8.0.1",
+    "@semantic-release/git": "^9.0.0",
+    "semantic-release": "^17.1.2",
+    "semantic-release-docker": "^2.2.0"
+  }
+  ,
+  "release": {
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/git",
+      "semantic-release-docker"
+    ],
+    "publish": [
+      {
+        "path": "semantic-release-docker",
+        "name": "raimondb/detect-i-cam"
+      }
+    ]
+  }
+}
