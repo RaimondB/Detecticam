@@ -22,7 +22,9 @@ jobs:
     script:
     - docker-compose -f DetectiCam/docker-compose.test.yml run sut
   - stage: Deploy
-    script: npx semantic-release --dry-run
+    script: 
+    - docker tag detecticam_sut:latest raimondb/detect-i-cam
+    - npx semantic-release --dry-run
 #      on:
 #        branch: master
 env:
