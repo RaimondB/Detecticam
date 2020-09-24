@@ -21,14 +21,16 @@ jobs:
   - name: Build Docker Image & Test
     script:
     - docker-compose -f DetectiCam/docker-compose.test.yml run sut
-#  - stage: Deploy
-#    script: 
-    - docker tag detecticam_sut:latest raimondb/detect-i-cam
+  
+deploy:
+  script: 
+    - docker -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
     - npm install -g npm
     - npm install
     - npx semantic-release --dry-run
-#      on:
-#        branch: master
+  on:
+    branch: master
+
 env:
   global:
   - secure: qkuW3gyMXpRD4slgCQ6otyefkytdov8idIsEx+tglxMVgGSd+L6T61cLLKuHt5JZgnQcXyWbV/vAnEXaviwI6/ACKvHFrbWTW2dM5Ssf+bnneh4Ek93/k5vK33RcYeateEeCOnMzlGRbwUJA73EFjIYVtsRl3OJ2xtwZCGEuzkyCv8QLh1vCD9AyIzcMdD8YLV2AWhJm0iewN+3u/Fsvgq8bQY4MvuX7SLkDs215h8xnEPOmRJwNU54+kHs9794j1RQgEZRas2ocyS5/r2vVKZW6ZAXZY0CfJd0iyvoPUo7wfwVd7PdADdrd9NlW/AFBuwMBhve7vA7wKJ/CphMru/gE6HXcTXpyIW8xA8oQyLPwve031VVAlqe1qLOhuGEtWWaD4+2wOoGqtyni1nKZI5c9Z6j5MRFlpWhZ9nDuItwYsP4fH9FOFFNWjs5Eu09HxmNpMa7rFHkUXPedthl7w4eNBaIyQCOCwvzU8l1R5TClGRp9meTqAmSdFkBvL42LQQGYoBUTa8bFoPqC2PV5S49yam+SR0cxTjf86SsOTLpKMb1VcrIimtMueGp3FACwM3QdBKB8VuAqXK6Quf/XoDahAUos4ul71LZTftu3SMOuLf9J7fjTpRBIg+W6HSlp9D3wrKkH60ef0eLvoTIFZ347McQgqxVhoxeTge75CMA=
