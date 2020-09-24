@@ -2,31 +2,27 @@ language: csharp
 mono: none
 dotnet: 3.1
 services:
-  - docker
-
+- docker
 solution: DetectiCam.sln
-
-#stages:
-#  - name: "Build & Publish Code Analysis"
-#    if: branch = master
-#  - name: "Build"
-#    if: branch != master
-
-# Commented to try out the sonar branch based approach.
-#
-
 jobs:
   include:
-  #  - stage: "Check Dependencies"
-  #      - dotnet restore
-    - stage: "Build" 
-      name: "Build & Publish Code Analysis"
-      script:
-        - dotnet restore
-        - dotnet tool restore
-        - dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="${SONAR_TOKEN}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="${TRAVIS_BRANCH}"
-        - dotnet test
-        - dotnet tool run dotnet-sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
-    - name: "Build Docker Image & Test"
-      script:
-        - docker-compose -f DetectiCam/docker-compose.test.yml run sut
+  - stage: Build
+    name: Build & Publish Code Analysis
+    script:
+    - dotnet restore
+    - dotnet tool restore
+    - dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="${SONAR_TOKEN}"
+      /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="${TRAVIS_BRANCH}"
+    - dotnet test
+    - dotnet tool run dotnet-sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
+  - name: Build Docker Image & Test
+    script:
+    - docker-compose -f DetectiCam/docker-compose.test.yml run sut
+  - stage: Deploy
+    script: npx semantic-release --dry-run
+      on:
+        branch: master
+env:
+  global:
+  - secure: qkuW3gyMXpRD4slgCQ6otyefkytdov8idIsEx+tglxMVgGSd+L6T61cLLKuHt5JZgnQcXyWbV/vAnEXaviwI6/ACKvHFrbWTW2dM5Ssf+bnneh4Ek93/k5vK33RcYeateEeCOnMzlGRbwUJA73EFjIYVtsRl3OJ2xtwZCGEuzkyCv8QLh1vCD9AyIzcMdD8YLV2AWhJm0iewN+3u/Fsvgq8bQY4MvuX7SLkDs215h8xnEPOmRJwNU54+kHs9794j1RQgEZRas2ocyS5/r2vVKZW6ZAXZY0CfJd0iyvoPUo7wfwVd7PdADdrd9NlW/AFBuwMBhve7vA7wKJ/CphMru/gE6HXcTXpyIW8xA8oQyLPwve031VVAlqe1qLOhuGEtWWaD4+2wOoGqtyni1nKZI5c9Z6j5MRFlpWhZ9nDuItwYsP4fH9FOFFNWjs5Eu09HxmNpMa7rFHkUXPedthl7w4eNBaIyQCOCwvzU8l1R5TClGRp9meTqAmSdFkBvL42LQQGYoBUTa8bFoPqC2PV5S49yam+SR0cxTjf86SsOTLpKMb1VcrIimtMueGp3FACwM3QdBKB8VuAqXK6Quf/XoDahAUos4ul71LZTftu3SMOuLf9J7fjTpRBIg+W6HSlp9D3wrKkH60ef0eLvoTIFZ347McQgqxVhoxeTge75CMA=
+  - secure: BJ84oIiTayRsuEDNBegMXAziZxjsI9M2Np5AgrU7x3bC3aA2/8CRrnh1uxlC5Q1LpCzFK/7IFqBgDm+qeyWT8vdqbnk7oD58alNuXujulYTgbtYlAey9Rn/kgeJDBceJREWo6gEzHSkdJjDQffFyzau09dI/WCgDaV331IyBQRHuRg7RQt6UB4JACQzB9h0ZJ5sHIiJQDXCcMoFA1atZfTFCm7ElVlQkw/hbSwPJmMCerScOlUPklPw0n/4XfRC2VGKVHH5mRnwcmJ24sMENq0IwUKsxxmZFNu1mzT2s01mWOZzn2x9Qv8g+75lehq5TqPU1D0wNqRdsuDiPtAN2qQPASGwRF8/Gxju2MuaD0vXqFEwEXUPFG5Y6f/0ThCbO9dQVafmRMdPIbt2RiGgNuLGf3t6pacKJvZFpo18d2SbeG6t0WyMFLby2K44Fjko7xVujKOjTU66mrhGYYqsCF8iiEsjDwbfxBKfcwXnK8KiW2MQtuUchb/FzBS2UfpMGIsxZTbTYmfQOKx0hPPo0gESyLWQCzRL+q6HcLoYlcrtGi5wKFKuJJJYW7Rxfp/OJfTl6QzMzdrgKPCBpaB3URPVhPLlwRT5wLknlYz4muEseitAXoX7tklZbhiRjX6ocMTjsrm/K3YjhhmykbXE8ZkU5gIpj2FX3XGRL9ZUK4Yc=
