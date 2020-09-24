@@ -26,11 +26,11 @@ jobs:
     script:
     - docker-compose -f DetectiCam/docker-compose.test.yml run sut
   - stage: deploy
-    skip_cleanup: true
+#    skip_cleanup: true
     script:
       - nvm install v12.0.0
-      - docker tag detecticam_sut:latest raimondb/detect-i-cam:latest
-#      - docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
+#      - docker tag detecticam_sut:latest raimondb/detect-i-cam:latest
+      - docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
       - npm install -g npm
       - npm install
       - npx semantic-release
