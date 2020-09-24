@@ -28,7 +28,7 @@ jobs:
   - stage: deploy
     script:
       - nvm install v12.0.0
-      - docker -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
+      - docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
       - npm install -g npm
       - npm install
       - npx semantic-release --dry-run
