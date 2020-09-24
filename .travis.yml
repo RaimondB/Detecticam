@@ -31,7 +31,7 @@ jobs:
       - docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
       - npm install -g npm
       - npm install
-      - npx semantic-release --dry-run
+      - npx semantic-release
       
 env:
   global:
