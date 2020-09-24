@@ -4,6 +4,8 @@ mono: none
 dotnet: 3.1
 services:
 - docker
+before_script:
+  - nvm install v10.15.0
 solution: DetectiCam.sln
 jobs:
   include:
