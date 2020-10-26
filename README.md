@@ -12,6 +12,7 @@ This solution offers the following features:
 * Saving annotated captured frames to check on detections
 * MQTT notification
 * Ability to filter on configurable objects from all of the 80 yolo3 classes
+* Configurable Region-Of-Interest (ROI) to constrain detections to a specific area
 
 ## Getting Started
 
