@@ -1,27 +1,12 @@
 ﻿using DetectiCam.Core.Detection;
 using OpenCvSharp;
 using System;
+using DetectiCam.Core.Common;
 
 namespace DetectiCam.Core.Visualization
 {
     public static class Visualizer
     {
-        private static T CropInRange<T>(this T value, T lowerBound, T upperBound) where T : IComparable<T>
-        {
-            if (value.CompareTo(lowerBound) < 0)
-            {
-                return lowerBound;
-            }
-            else if (value.CompareTo(upperBound) > 0)
-            {
-                return upperBound;
-            }
-            else
-            {
-                return value;
-            }
-        }
-
         public static Mat AnnotateImage(Mat orgImage, DnnDetectedObject[] detectedObjects)
         {
             if (detectedObjects == null) throw new ArgumentNullException(nameof(detectedObjects));

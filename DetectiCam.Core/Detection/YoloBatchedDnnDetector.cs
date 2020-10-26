@@ -78,12 +78,29 @@ namespace DetectiCam.Core.Detection
             var imageInfos = frames.Where(f => f.Image != null).Select(f =>
             {
                 var roi = _roiConfig.GetValueOrDefault(f.Metadata.Info.Id, null);
-                if (roi != null) Logger.LogDebug("Cropping for {vsid}", f.Metadata.Info.Id);
+                if (roi != null)
+                {
+                    Logger.LogDebug("Cropping for ROI: {vsid}", f.Metadata.Info.Id);
+                    int topC = roi.Top.CropInRange(0, f.Image.Rows - 1);
+                    int bottomC = roi.Bottom.CropInRange(0, f.Image.Rows - 1);
+                    int leftC = roi.Left.CropInRange(0, f.Image.Cols - 1);
+                    int rightC = roi.Right.CropInRange(0, f.Image.Cols - 1);
+                    
+                    var roiC = new Region() { Top = topC, Bottom = bottomC, Left = leftC, Right = rightC };
+
+                    if(topC != roi.Top || bottomC != roi.Bottom || leftC != roi.Left || rightC != roi.Right)
+                    {
+                        Logger.LogWarning("The configured ROI does not fit within the frame. Adjusted from {roi} to {roiC}", roi, roiC);
+                    }
+                    roi = roiC;
+                }
+
                 return new
                 {
                     Image = roi == null ? f.Image : f.Image[new Range(roi.Top, roi.Bottom), new Range(roi.Left, roi.Right)],
                     ROI = roi
                 };
+
             }).ToList();
 
             //Execute the core detection
