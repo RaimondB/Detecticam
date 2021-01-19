@@ -29,7 +29,7 @@ namespace DetectiCam.Core.Detection
             _roiConfig = GetValidatedOptions<VideoStreamsOptions>(streamOptions).
                 ToDictionary(o => o.Id, o => o.ROI);
 
-            //YOLOv3 Fiel locations
+            //YOLOv3 File locations
             //Cfg: https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg
             //Weight: https://pjreddie.com/media/files/yolov3.weights
             //Names: https://github.com/pjreddie/darknet/blob/master/data/coco.names
@@ -45,7 +45,9 @@ namespace DetectiCam.Core.Detection
             Colors = Enumerable.Repeat(false, Labels.Length).Select(x => Scalar.RandomColor()).ToArray();
 
             Logger.LogInformation("Loading Neural Net");
-            nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(cfg, weight);
+
+            //Does not result in a null object, but will trow exception on errors, so safe to assume non-null
+            nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(cfg, weight)!;
 
             _outNames = nnet.GetUnconnectedOutLayersNames()!;
 
