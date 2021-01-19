@@ -1,10 +1,10 @@
-FROM raimondb/opencv-dotnet-runtime-deps:0.6.0 AS base
+FROM raimondb/opencv-dotnet-runtime-deps:0.7.0 AS base
 COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"]
 RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1.405-bionic AS build
+FROM mcr.microsoft.com/dotnet/sdk:3.1.405-bionic-arm64v8 AS build
 WORKDIR /src
 COPY ["DetectiCam/DetectiCam.csproj", "DetectiCam/"]
 COPY ["DetectiCam.Core/DetectiCam.Core.csproj", "DetectiCam.Core/"]

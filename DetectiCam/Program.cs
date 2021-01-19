@@ -70,11 +70,11 @@ namespace DetectiCam
             })
             .ConfigureLogging(logging =>
             {
-                logging.AddConsole(c =>
-                {
-                    c.TimestampFormat = "[HH:mm:ss.fff] ";
-                    c.IncludeScopes = false;
-                });
+                _ = logging.AddSimpleConsole(c =>
+                  {
+                      c.TimestampFormat = "[HH:mm:ss.fff] ";
+                      c.IncludeScopes = false;
+                  });
             });
 
         private static void ConfigureConfigDir(HostBuilderContext hostingContext, IConfigurationBuilder config)
