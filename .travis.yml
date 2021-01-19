@@ -24,6 +24,7 @@ jobs:
     - dotnet tool run dotnet-sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
   - name: Build Docker Image & Test
     script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     - docker-compose -f DetectiCam/docker-compose.test.yml run sut
   - stage: deploy
     script:
