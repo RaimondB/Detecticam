@@ -28,11 +28,12 @@ jobs:
     - docker-compose -f DetectiCam/docker-compose.test.yml run sut
   - stage: deploy
     script:
-      - nvm install v12.0.0
-      - docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
-      - npm install -g npm
-      - npm install
-      - npx semantic-release
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - nvm install v12.0.0
+    - docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
+    - npm install -g npm
+    - npm install
+    - npx semantic-release
       
 env:
   global:
