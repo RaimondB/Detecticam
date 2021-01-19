@@ -1,4 +1,4 @@
-FROM raimondb/opencv-dotnet-runtime-deps:0.7.0 AS base
+FROM raimondb/opencv-dotnet-runtime-deps:0.10.0 AS base
 COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"]
 RUN apt-get update && apt-get install -y \
     curl \
