@@ -43,13 +43,16 @@ stages:
     pool:
       vmImage: ubuntu-latest
     steps:
+    - task: Npm@1
+      inputs:
+        command: 'install'
     - task: Bash@3
       inputs:
         targetType: 'inline'
         script: |
           #echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-          nvm install v12.0.0
+          #nvm install v12.0.0
           #docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
-          npm install -g npm
-          npm install
+          #npm install -g npm
+          #npm install
           npx semantic-release
