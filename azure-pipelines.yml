@@ -9,6 +9,7 @@ resources:
 
 variables:
   tag: '$(Build.BuildId)'
+  gh_token: '$(GH_TOKEN)'
 
 stages:
 - stage: Build
