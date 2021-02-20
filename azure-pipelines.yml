@@ -25,10 +25,9 @@ stages:
         script: |
           dotnet restore
           dotnet tool restore
-          #dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="${SONAR_TOKEN}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="${TRAVIS_BRANCH}"
-          #dotnet test
-          #dotnet tool run dotnet-sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
-          # Write your commands here
+          dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="$(Build.SourceBranch)"
+          dotnet test
+          dotnet tool run dotnet-sonarscanner end /d:sonar.login="$(SONAR_TOKEN)"
     - task: Bash@3
       inputs:
         targetType: 'inline'
