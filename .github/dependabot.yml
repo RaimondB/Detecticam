@@ -20,3 +20,12 @@ updates:
       # Prefix all commit messages with "npm"
       prefix: "fix"
       prefix-development: "ci"
+- package-ecosystem: "npm"
+  directory: "/"
+  schedule:
+      interval: "daily"
+  open-pull-requests-limit: 10
+  commit-message:
+      # Prefix all commit messages with "npm"
+      prefix: "fix"
+      prefix-development: "ci"
