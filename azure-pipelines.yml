@@ -51,6 +51,8 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
+          export GH_TOKEN=$(GH_TOKEN)
+          echo "token:$(GH_TOKEN)"
           #echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           #nvm install v12.0.0
           #docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
