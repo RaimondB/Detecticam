@@ -50,7 +50,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          #export GH_TOKEN=$GH_TOKEN
+          export GH_TOKEN=$(GH_TOKEN)
           echo "token:$GH_TOKEN"
           #echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           #nvm install v12.0.0
@@ -58,3 +58,5 @@ stages:
           #npm install -g npm
           #npm install
           npx semantic-release
+      env:
+        GH_TOKEN: $(GH_TOKEN)
