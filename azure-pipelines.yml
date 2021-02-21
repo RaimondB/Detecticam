@@ -45,6 +45,7 @@ stages:
         DOCKER_PASSWORD: $(DOCKER_PASSWORD)
 - stage: Release
   displayName: Release a new image on Dockerhub
+  condition:  and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
   - job: Build
     displayName: Build Docker & Release to DockerHub
