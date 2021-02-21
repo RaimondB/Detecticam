@@ -22,12 +22,13 @@ stages:
     - task: JavaToolInstaller@0
       inputs:
         versionSpec: '11'
-        jdkArchitectureOption: 'x86'
+        jdkArchitectureOption: 'x64'
         jdkSourceOption: 'PreInstalled'
     - task: Bash@3
       inputs:
         targetType: 'inline'
         script: |
+          #export JAVA_HOME=$JAVA_HOME_11_X64
           dotnet restore
           dotnet tool restore
           dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="$(Build.SourceBranch)"
