@@ -34,6 +34,12 @@ stages:
           dotnet tool run dotnet-sonarscanner end /d:sonar.login="$(SONAR_TOKEN)"
       env:
         SONAR_TOKEN: $(SONAR_TOKEN)
+    - task: Cache@2
+      inputs:
+        key: 'docker | "$(Agent.OS)" | caching-docker.yml'
+        path: $(Pipeline.Workspace)/docker
+        cacheHitVar: DOCKER_CACHE_RESTORED
+      displayName: Caching Docker image
     - task: Bash@3
       displayName: Integration Tests
       inputs:
