@@ -7,9 +7,6 @@ pr:
 resources:
 - repo: self
 
-variables:
-  tag: '$(Build.BuildId)'
-
 stages:
 - stage: Build
   displayName: Build & QA
@@ -19,7 +16,8 @@ stages:
     pool:
       vmImage: ubuntu-latest
     steps:
-    - task: JavaToolInstaller@0 
+    - task: JavaToolInstaller@0
+      displayName: Ensure Java 11 
       inputs: # make sure Java 11 is installed and pointed to by JAVA_HOME, since the Sonar Scanner requires this to run
         versionSpec: '11'
         jdkArchitectureOption: 'x64'
@@ -37,23 +35,24 @@ stages:
       env:
         SONAR_TOKEN: $(SONAR_TOKEN)
     - task: Bash@3
+      displayName: Integration Tests
       inputs:
         targetType: 'inline'
         script: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           docker-compose -f DetectiCam/docker-compose.test.yml run sut
-      env:
+      env: #provide secrets this way to have them available as an environment variable in a secure way
         DOCKER_PASSWORD: $(DOCKER_PASSWORD)
 - stage: Release
   displayName: Release a new image on Dockerhub
   jobs:
   - job: Build
-    displayName: Build
+    displayName: Build Docker & Release to DockerHub
     pool:
       vmImage: ubuntu-latest
     steps:
     - task: Npm@1
-      inputs:
+      inputs: # Ensure that the semantic-release tool is installed as specified in the package.json
         command: 'install'
     - task: Bash@3
       inputs:
