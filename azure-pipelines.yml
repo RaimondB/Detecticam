@@ -19,15 +19,20 @@ stages:
     pool:
       vmImage: ubuntu-latest
     steps:
+    - task: JavaToolInstaller@0
+      inputs:
+        versionSpec: '11'
+        jdkArchitectureOption: 'x86'
+        jdkSourceOption: 'PreInstalled'
     - task: Bash@3
       inputs:
         targetType: 'inline'
         script: |
           dotnet restore
           dotnet tool restore
-          #dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="$(Build.SourceBranch)"
-          #dotnet test
-          #dotnet tool run dotnet-sonarscanner end /d:sonar.login="$(SONAR_TOKEN)"
+          dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="$(Build.SourceBranch)"
+          dotnet test
+          dotnet tool run dotnet-sonarscanner end /d:sonar.login="$(SONAR_TOKEN)"
           # need to update to java 11 for sonar
       env:
         SONAR_TOKEN: $(SOANR_TOKEN)
@@ -55,10 +60,7 @@ stages:
         targetType: 'inline'
         script: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-          #nvm install v12.0.0
-          #docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
-          #npm install -g npm
-          #npm install
+          docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
           npx semantic-release
       env:
         GH_TOKEN: $(GH_TOKEN)
