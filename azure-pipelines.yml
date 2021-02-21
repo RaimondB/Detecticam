@@ -29,12 +29,16 @@ stages:
           #dotnet test
           #dotnet tool run dotnet-sonarscanner end /d:sonar.login="$(SONAR_TOKEN)"
           # need to update to java 11 for sonar
+      env:
+        SONAR_TOKEN: $(SOANR_TOKEN)
     - task: Bash@3
       inputs:
         targetType: 'inline'
         script: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           docker-compose -f DetectiCam/docker-compose.test.yml run sut
+      env:
+        DOCKER_PASSWORD: $(DOCKER_PASSWORD)
 - stage: Release
   displayName: Release a new image on Dockerhub
   jobs:
@@ -50,9 +54,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          export GH_TOKEN=$(GH_TOKEN)
-          echo "token:$GH_TOKEN"
-          #echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           #nvm install v12.0.0
           #docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
           #npm install -g npm
@@ -60,3 +62,4 @@ stages:
           npx semantic-release
       env:
         GH_TOKEN: $(GH_TOKEN)
+        DOCKER_PASSWORD: $(DOCKER_PASSWORD)
