@@ -41,6 +41,9 @@ stages:
         script: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           docker-compose -f DetectiCam/docker-compose.test.yml run sut
+          docker image ls
+          mkdir -p $(Pipeline.Workspace)/docker
+          docker save detecticam_sut > $(Pipeline.Workspace)/docker/cache.tar
       env: #provide secrets this way to have them available as an environment variable in a secure way
         DOCKER_PASSWORD: $(DOCKER_PASSWORD)
 - stage: Release
@@ -60,7 +63,9 @@ stages:
         targetType: 'inline'
         script: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-          docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
+          docker load < $(Pipeline.Workspace)/docker/cache.tar
+          docker tag detecticam_sut raimondb/detect-i-cam
+          #docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
           npx semantic-release
       env:
         GH_TOKEN: $(GH_TOKEN)
