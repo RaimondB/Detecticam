@@ -19,24 +19,23 @@ stages:
     pool:
       vmImage: ubuntu-latest
     steps:
-    - task: JavaToolInstaller@0
-      inputs:
+    - task: JavaToolInstaller@0 
+      inputs: # make sure Java 11 is installed and pointed to by JAVA_HOME, since the Sonar Scanner requires this to run
         versionSpec: '11'
         jdkArchitectureOption: 'x64'
         jdkSourceOption: 'PreInstalled'
     - task: Bash@3
+      displayName: Build & Code Analysis
       inputs:
         targetType: 'inline'
         script: |
-          #export JAVA_HOME=$JAVA_HOME_11_X64
           dotnet restore
           dotnet tool restore
-          dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="$(Build.SourceBranch)"
+          dotnet tool run dotnet-sonarscanner begin /o:"raimondb" /k:"RaimondB_Detecticam"  /d:sonar.login="$(SONAR_TOKEN)" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.branch.name="$(Build.SourceBranchName)"
           dotnet test
           dotnet tool run dotnet-sonarscanner end /d:sonar.login="$(SONAR_TOKEN)"
-          # need to update to java 11 for sonar
       env:
-        SONAR_TOKEN: $(SOANR_TOKEN)
+        SONAR_TOKEN: $(SONAR_TOKEN)
     - task: Bash@3
       inputs:
         targetType: 'inline'
