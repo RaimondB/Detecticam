@@ -65,7 +65,7 @@ stages:
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           docker load < $(Pipeline.Workspace)/docker/cache.tar
           docker tag detecticam_sut raimondb/detect-i-cam
-          docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
+          #docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
           npx semantic-release
       env:
         GH_TOKEN: $(GH_TOKEN)
