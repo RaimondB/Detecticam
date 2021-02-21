@@ -30,28 +30,40 @@ namespace DetectiCam.Core.ResultProcessor
 
             if (_isEnabled)
             {
-                if (!String.IsNullOrEmpty(Options.TopicPrefix))
+                try
                 {
-                    _topicPrefix = Options.TopicPrefix;
-                    if (!Options.TopicPrefix.EndsWith("/", StringComparison.OrdinalIgnoreCase))
+                    if (!String.IsNullOrEmpty(Options.TopicPrefix))
                     {
-                        _topicPrefix += "/";
+                        _topicPrefix = Options.TopicPrefix;
+                        if (!Options.TopicPrefix.EndsWith("/", StringComparison.OrdinalIgnoreCase))
+                        {
+                            _topicPrefix += "/";
+                        }
+                    }
+                    else
+                    {
+                        _topicPrefix = "";
+                    }
+
+                    // create client instance 
+                    _client = new MqttClient(Options.Server, Options.Port, false,
+                        MqttSslProtocols.None,
+                        null, null);
+
+                    string clientId = String.IsNullOrEmpty(Options.ClientId) ? Guid.NewGuid().ToString() :
+                        Options.ClientId;
+
+                    _ = _client.Connect(clientId, Options.Username, Options.Password);
+
+                    if (_client.IsConnected)
+                    {
+                        Logger.LogInformation("MQTT Client connected");
                     }
                 }
-                else
+                catch(Exception ex)
                 {
-                    _topicPrefix = "";
+                    Logger.LogError(ex, "Error in MQTTPUblisher");
                 }
-
-                // create client instance 
-                _client = new MqttClient(Options.Server, Options.Port, false,
-                    MqttSslProtocols.None,
-                    null, null);
-
-                string clientId = String.IsNullOrEmpty(Options.ClientId) ? Guid.NewGuid().ToString() :
-                    Options.ClientId;
-
-                _client.Connect(clientId, Options.Username, Options.Password);
             }
         }
 
@@ -79,6 +91,7 @@ namespace DetectiCam.Core.ResultProcessor
 
                 string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/state";
 
+                Logger.LogInformation("Published detection to:{0}", topic);
                 // publish a message on "/home/temperature" topic with QoS 2 
                 _client.Publish(topic,
                     Encoding.UTF8.GetBytes(strValue),

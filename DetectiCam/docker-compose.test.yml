@@ -8,3 +8,22 @@ services:
        - "./docker-test/capture:/captures"
        - "./docker-test/config:/config"
      command: /app/run_tests.sh
+     depends_on:
+     - mqtt
+  mqtt:
+    image: eclipse-mosquitto
+    hostname: mosquitto
+    container_name: mosquitto
+    user: 1001:1001
+    expose:
+      - "1883"
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./docker-test/mqtt-config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+#      - ./data/mosquitto_data:/mosquitto/data
+#      - ./data/mosquitto_log:/mosquitto/log
+    restart: always     
+
+#listener 1883
+#allow_anonymous true
