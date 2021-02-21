@@ -42,6 +42,7 @@ stages:
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           docker-compose -f DetectiCam/docker-compose.test.yml run sut
           docker image ls
+          mkdir -p $(Pipeline.Workspace)/docker
           docker save detecticam_sut > $(Pipeline.Workspace)/docker/cache.tar
       env: #provide secrets this way to have them available as an environment variable in a secure way
         DOCKER_PASSWORD: $(DOCKER_PASSWORD)
