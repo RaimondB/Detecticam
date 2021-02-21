@@ -53,11 +53,17 @@ namespace DetectiCam.Core.VideoCapturing
 
         public virtual async Task StopProcessingAsync(CancellationToken cancellationToken)
         {
-            _internalCts.Cancel();
-            if (_processorTask != null)
+            try
             {
-                await _processorTask.ConfigureAwait(false);
-                _processorTask = null;
+                _internalCts.Cancel();
+            }
+            finally
+            {
+                if (_processorTask != null)
+                {
+                    await _processorTask.ConfigureAwait(false);
+                    _processorTask = null;
+                }
             }
         }
 
