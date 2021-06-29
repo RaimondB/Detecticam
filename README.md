@@ -242,8 +242,7 @@ To get a snapshot, simply execute a GET request towards the following path:
 http://<host>:<port>/api/camera/<stream-id>/snapshot
 ```
 
-This will return a PNG image. To get a desired port, map port 80 to an appropriate port on you Docker host. 
-
+This will return a PNG image. To get access to the port, map port 80 of the container to an appropriate port on your Docker host.
 
 ## Contributing
 
