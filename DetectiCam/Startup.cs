@@ -19,6 +19,7 @@ namespace DetectiCam
                 .AddCheck<HeartbeatHealthCheck<MultiStreamBatchedProcessorPipeline>>
                     ("processor_pipeline_heartbeat");
 
+            services.AddControllers();
 
         }
 
@@ -36,10 +37,8 @@ namespace DetectiCam
 
             app.UseEndpoints(endpoints =>
             {
-                app.UseEndpoints(endpoints =>
-                {
-                    endpoints.MapHealthChecks("/health");
-                });
+                endpoints.MapHealthChecks("/health");
+                endpoints.MapControllers();
             });
         }
     }
