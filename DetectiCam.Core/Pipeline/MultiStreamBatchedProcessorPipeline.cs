@@ -21,7 +21,7 @@ namespace DetectiCam.Core.VideoCapturing
     {
         private readonly List<IAsyncSingleResultProcessor> _resultProcessors;
 
-        private readonly List<VideoStreamGrabber> _streams = new List<VideoStreamGrabber>();
+        private readonly Dictionary<string,VideoStreamGrabber> _streams = new Dictionary<string,VideoStreamGrabber>();
         private readonly VideoStreamsOptions _streamsConfig;
         private readonly DetectionOptions _detectionOptions;
 
@@ -96,7 +96,7 @@ namespace DetectiCam.Core.VideoCapturing
             Logger.LogInformation("Start Capturing All Streams");
             List<Task> streamsStartedTasks = new List<Task>();
 
-            foreach (var stream in _streams)
+            foreach (var stream in _streams.Values)
             {
                 Logger.LogInformation("Start Capturing: {streamId}", stream.Info.Id);
                 var captureStartedTask = stream.StartCapturing(cancellationToken);
@@ -117,8 +117,13 @@ namespace DetectiCam.Core.VideoCapturing
 
             VideoStreamGrabber vs = new VideoStreamGrabber(Logger, streamInfo, newChannel);
 
-            _streams.Add(vs);
+            _streams[vs.StreamName] = vs;
 
+        }
+
+        public VideoStreamGrabber? GetGrabberForStream(string streamName)
+        {
+            return _streams.GetValueOrDefault(streamName);
         }
 
         private void CreateCapturingChannels()
@@ -162,7 +167,7 @@ namespace DetectiCam.Core.VideoCapturing
             await StartCapturingAllStreamsAsync(cancellationToken).ConfigureAwait(false);
 
             //Only start the trigger when we know that all capturing streams have started.
-            _trigger = new PeriodicTrigger(Logger, _streams);
+            _trigger = new PeriodicTrigger(Logger, _streams.Values);
             _trigger.Start(TimeSpan.FromSeconds(_streams.Count), _analysisInterval);
 
             await Task.WhenAll(mergerTask, analyzerTask, resultPublisherTask).ConfigureAwait(false);
@@ -173,7 +178,7 @@ namespace DetectiCam.Core.VideoCapturing
         public async Task StopProcessingAsync()
         {
             Logger.LogInformation("Stopping capturing tasks");
-            foreach (VideoStreamGrabber vs in _streams)
+            foreach (VideoStreamGrabber vs in _streams.Values)
             {
                 await vs.StopProcessingAsync().ConfigureAwait(false);
                 vs.Dispose();
@@ -216,7 +221,7 @@ namespace DetectiCam.Core.VideoCapturing
         protected virtual void Dispose(bool disposing)
         {
             _trigger?.Dispose();
-            foreach (VideoStreamGrabber vs in _streams)
+            foreach (VideoStreamGrabber vs in _streams.Values)
             {
                 vs?.Dispose();
             }

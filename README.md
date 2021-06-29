@@ -13,6 +13,7 @@ This solution offers the following features:
 * MQTT notification
 * Ability to filter on configurable objects from all of the 80 yolo3 classes
 * Configurable Region-Of-Interest (ROI) to constrain detections to a specific area
+* Downloading a snapshot via REST API for a configured camera
 
 ## Getting Started
 
@@ -220,6 +221,28 @@ The below "yolov3" section of configuration should than be added to your appsett
 * *namesFile*: Optional, Contains are the recognized labels in Coco Format
 * *configFile*: Optional, Darknet Config file
 * *weightsFile*: Optional, Darknet Weights file.
+
+## Creating snapshots
+
+Aside from detection, it is often usefull to have a fast way to create a camera snapshot. Since detect-i-cam is already continuously grabbing frames, I decided to add this functionality. In this case to have a fast snapshot mechanism for when somebody presses the doorbell.
+
+As there is no authentication built-in, this feature should only be enabled on a secure network. Therefore the feature is switched off by default. I can be enabled as shown below.
+
+```json
+{
+  "snapshot": {
+    "enabled": true
+  }
+}
+```
+
+To get a snapshot, simply execute a GET request towards the following path:
+
+```web
+http://<host>:<port>/api/camera/<stream-id>/snapshot
+```
+
+This will return a PNG image. To get access to the port, map port 80 of the container to an appropriate port on your Docker host.
 
 ## Contributing
 

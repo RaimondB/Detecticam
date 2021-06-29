@@ -1,4 +1,5 @@
-﻿using DetectiCam.Core.Common;
+﻿using DetectiCam.Controllers;
+using DetectiCam.Core.Common;
 using DetectiCam.Core.Detection;
 using DetectiCam.Core.ResultProcessor;
 using DetectiCam.Core.VideoCapturing;
@@ -45,6 +46,9 @@ namespace DetectiCam
                     .ValidateDataAnnotations();
                 services.AddOptions<Yolo3Options>()
                     .Bind(hostContext.Configuration.GetSection(Yolo3Options.Yolo3))
+                    .ValidateDataAnnotations();
+                services.AddOptions<SnapshotOptions>()
+                    .Bind(hostContext.Configuration.GetSection(SnapshotOptions.Snapshot))
                     .ValidateDataAnnotations();
 
 

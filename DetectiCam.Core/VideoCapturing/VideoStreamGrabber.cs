@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -306,6 +307,25 @@ namespace DetectiCam.Core.VideoCapturing
                 _logger.LogWarning("Producer: No frame available to publish");
             }
         }
+
+        public void CreateSnapshot(Stream outputStream)
+        {
+            _logger.LogInformation($"Create Snapshot for [{StreamName}]");
+
+            if (_frameBufferReader.TryRead(out var frameContext))
+            {
+                Mat imageToPublish = PreprocessImage(frameContext.Frame);
+
+                _logger.LogDebug("Snapshot: write snapshot to output stream");
+
+                imageToPublish.WriteToStream(outputStream);
+            }
+            else
+            {
+                _logger.LogWarning("Snapshot: No frame available");
+            }
+        }
+
 
         public void Dispose()
         {
