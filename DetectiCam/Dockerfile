@@ -14,7 +14,7 @@ WORKDIR "/src/DetectiCam"
 RUN dotnet build "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=true -o /app/publish
+RUN dotnet publish "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false -o /app/publish
 
 FROM base AS final
 VOLUME /captures
