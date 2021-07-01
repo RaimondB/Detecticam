@@ -4,7 +4,7 @@ Detect-i-cam is a solution for monitoring camera's with A.I. object detection by
 
 This solution offers the following features:
 
-* Docker image runnable on linux
+* Docker image runnable on linux based on ASP.NET Core
 * Able to monitor multiple camera streams in parallel
 * Batch processing the captured images in the CNN for efficiency
 * Using OpenCV
