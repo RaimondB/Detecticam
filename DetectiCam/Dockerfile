@@ -1,13 +1,14 @@
-FROM mcr.microsoft.com/dotnet/aspnet:3.1.16-bionic AS base
-RUN apt-get update && apt-get install -y \
-    libgtk2.0-0 \
-    libtesseract4 \
-    libdc1394-22 \
-    libavformat57 \
-    libswscale4 \
-    libopenexr22 \
-  && rm -rf /var/lib/apt/lists/*
-  #FROM raimondb/opencv-dotnet-runtime-deps:0.10.0 AS base
+#FROM mcr.microsoft.com/dotnet/aspnet:3.1.16-bionic AS base
+#RUN apt-get update && apt-get install -y \
+#   libgtk2.0-0 \
+#    libtesseract4 \
+#    libdc1394-22 \
+#    libavformat57 \
+#    libswscale4 \
+#    libopenexr22 \
+#  && rm -rf /var/lib/apt/lists/*
+FROM raimondb/opencv-dotnet-runtime-deps:0.23.0 AS base
+
 COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"]
 RUN apt-get update && apt-get install -y \
     curl \
