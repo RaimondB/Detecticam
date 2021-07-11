@@ -1,4 +1,13 @@
-FROM raimondb/opencv-dotnet-runtime-deps:0.10.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:3.1.16-bionic AS base
+RUN apt-get update && apt-get install -y \
+    libgtk2.0-0 \
+    libtesseract4 \
+    libdc1394-22 \
+    libavformat57 \
+    libswscale4 \
+    libopenexr22 \
+  && rm -rf /var/lib/apt/lists/*
+  #FROM raimondb/opencv-dotnet-runtime-deps:0.10.0 AS base
 COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"]
 RUN apt-get update && apt-get install -y \
     curl \
@@ -14,7 +23,7 @@ WORKDIR "/src/DetectiCam"
 RUN dotnet build "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=true -o /app/publish
+RUN dotnet publish "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false -o /app/publish
 
 FROM base AS final
 VOLUME /captures
@@ -25,4 +34,5 @@ WORKDIR /app
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD curl -f http://localhost/health || exit 1
 COPY --from=publish /app/publish .
+#COPY ./run_tests.sh .
 ENTRYPOINT ["./DetectiCam", "--configdir=/config"]
