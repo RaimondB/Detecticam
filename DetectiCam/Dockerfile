@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-FROM mcr.microsoft.com/dotnet/sdk:3.1.417-bionic AS build
+FROM mcr.microsoft.com/dotnet/sdk:3.1.418-bionic AS build
 WORKDIR /src
 COPY ["DetectiCam/DetectiCam.csproj", "DetectiCam/"]
 COPY ["DetectiCam.Core/DetectiCam.Core.csproj", "DetectiCam.Core/"]
