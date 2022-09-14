@@ -39,7 +39,7 @@ namespace DetectiCam.Core.VideoCapturing
                 while (true)
                 {
                     linkedToken.ThrowIfCancellationRequested();
-                    List<T> results = new List<T>();
+                    List<T> results = new();
 
                     _logger.LogDebug("Merging frames start batch");
 

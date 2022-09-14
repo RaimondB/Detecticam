@@ -35,7 +35,7 @@ namespace DetectiCam.Core.Pipeline
             _detector.Initialize();
         }
 
-        private readonly Stopwatch _stopwatch = new Stopwatch();
+        private readonly Stopwatch _stopwatch = new();
 
         protected override ValueTask<IList<VideoFrame>> ExecuteTransform(IList<VideoFrame> input, CancellationToken cancellationToken)
         {
@@ -73,10 +73,8 @@ namespace DetectiCam.Core.Pipeline
             }
             catch (Exception ae) when (True(() =>
                     Logger.LogError("DoAnalysis: Exception from analysis task:{message}", ae.Message)))
-#pragma warning disable S108 // Nested blocks of code should not be left empty
             {
             }
-#pragma warning restore S108 // Nested blocks of code should not be left empty
 
             return new ValueTask<IList<VideoFrame>>(input);
         }

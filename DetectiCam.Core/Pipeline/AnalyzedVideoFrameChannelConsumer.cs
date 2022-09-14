@@ -16,7 +16,7 @@ namespace DetectiCam.Core.VideoCapturing
     {
         private readonly List<IAsyncSingleResultProcessor> _resultProcessors;
         private readonly ObjectWhiteList _objectWhitelist;
-        private readonly Dictionary<string, HashSet<string>> _whitelistCache = new Dictionary<string, HashSet<string>>();
+        private readonly Dictionary<string, HashSet<string>> _whitelistCache = new();
 
         public AnalyzedVideoFrameChannelConsumer(ChannelReader<IList<VideoFrame>> inputReader,
             IEnumerable<IAsyncSingleResultProcessor> resultProcessors,
@@ -70,10 +70,8 @@ namespace DetectiCam.Core.VideoCapturing
             }
             catch (Exception ex) when (True(() =>
                 Logger.LogError(ex, "Exceptions during publication of detection results")))
-#pragma warning disable S108 // Nested blocks of code should not be left empty
             { 
             }
-#pragma warning restore S108 // Nested blocks of code should not be left empty
             finally
             {
                 resultTasks.Clear();
@@ -86,11 +84,15 @@ namespace DetectiCam.Core.VideoCapturing
 
         private bool HasDetectedWhitelistedObjects(VideoFrame videoFrame)
         {
-            var detections = videoFrame.Metadata.AnalysisResult.Select(d => d.Label).ToList();
-            var whiteList = GetConsolidatedWhitelist(videoFrame);
+            if (videoFrame.Metadata.AnalysisResult is not null)
+            {
+                var detections = videoFrame.Metadata.AnalysisResult.Select(d => d.Label).ToList();
+                var whiteList = GetConsolidatedWhitelist(videoFrame);
 
-            //Will return true if any of the whitelisted object was detected.
-            return whiteList.Overlaps(detections);
+                //Will return true if any of the whitelisted object was detected.
+                return whiteList.Overlaps(detections);
+            }
+            return false;
         }
 
         private HashSet<string> GetConsolidatedWhitelist(VideoFrame frame)

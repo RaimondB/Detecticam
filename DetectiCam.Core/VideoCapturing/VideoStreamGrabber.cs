@@ -50,8 +50,8 @@ namespace DetectiCam.Core.VideoCapturing
         private readonly ChannelReader<(Mat Frame, DateTime Timestamp, int FrameCount)> _frameBufferReader;
         private readonly ChannelWriter<(Mat Frame, DateTime Timestamp, int FrameCount)> _frameBufferWriter;
 
-        private readonly Mat _image1 = new Mat();
-        private readonly Mat _image2 = new Mat();
+        private readonly Mat _image1 = new();
+        private readonly Mat _image2 = new();
 
         private enum GrabResult
         {
@@ -90,7 +90,9 @@ namespace DetectiCam.Core.VideoCapturing
         [Conditional("TRACE_GRABBER")]
         private void LogTrace(string message, params object[] args)
         {
+#pragma warning disable CA2254 // Template should be a static expression : not here since used for generic passtrhough with conditional compilation
             _logger.LogTrace(message, args);
+#pragma warning restore CA2254 // Template should be a static expression
         }
 
         public VideoCapture InitCapture()
@@ -103,19 +105,19 @@ namespace DetectiCam.Core.VideoCapturing
 
                 if (rFpds > 0 && rFpds < 60)
                 {
-                    _logger.LogInformation($"Init Fps from stream:{this.Info.Id} at {rFpds}");
+                    _logger.LogInformation("Init Fps from stream:{streamId} at {fps}", this.Info.Id, rFpds);
                     _fps = rFpds;
 
                 }
                 else
                 {
-                    _logger.LogInformation($"Fps {rFpds} invalid Init Fps from stream:{this.Info.Id}. Fallback to 30 fps");
+                    _logger.LogInformation("Init Fps from stream:{streamId} invalid ({fps}). Fallback to 30 fps", this.Info.Id, rFpds);
                     _fps = 30;
                 }
             }
             else
             {
-                _logger.LogInformation($"Init Forced Fps from stream:{this.Info.Id} at {Fps}");
+                _logger.LogInformation("Init Forced Fps from stream:{streamId} at {fps}", this.Info.Id, Fps);
             }
 
             return videoCapture;
@@ -172,9 +174,7 @@ namespace DetectiCam.Core.VideoCapturing
                                 firstTime = false;
                             }
                         }
-#pragma warning disable CA1031 // Do not catch general exception types
                         catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                         {
                             if (firstTime) capstureStartedTcs.SetException(ex);
                             _logger.LogError(ex, "Exception in processes videostream {name}, restarting", this.StreamName);
@@ -205,7 +205,7 @@ namespace DetectiCam.Core.VideoCapturing
             LogTrace("Producer: frame-grab took {0} ms", (endTime - startTime).Milliseconds);
 #endif
 
-            if (success && !imageBuffer.Empty())
+            if (success && !imageBuffer.Empty() && !imageBuffer.IsDisposed)
             {
                 //Use a tuple to prevent allocation of a full VideoFrame class that also needs to be disposed.
                 var frameContext = (Frame: imageBuffer, Timestamp: startTime, FrameCount: frameCount);
@@ -241,19 +241,21 @@ namespace DetectiCam.Core.VideoCapturing
             }
         }
 
-        private Mat PreprocessImage(Mat imageBuffer)
+        private Mat? PreprocessImage(Mat imageBuffer)
         {
+            if (imageBuffer.IsDisposed) return null;
+
             Mat publishedImage;
             if (RotateFlags.HasValue)
             {
-                Mat rotImage = new Mat();
+                Mat rotImage = new();
                 Cv2.Rotate(imageBuffer, rotImage, RotateFlags.Value);
 
                 publishedImage = rotImage;
             }
             else
             {
-                Mat cloneImage = new Mat();
+                Mat cloneImage = new();
 
                 Cv2.CopyTo(imageBuffer, cloneImage);
 
@@ -278,28 +280,33 @@ namespace DetectiCam.Core.VideoCapturing
         {
             if (_frameBufferReader.TryRead(out var frameContext))
             {
-                Mat imageToPublish = PreprocessImage(frameContext.Frame);
+                var imageToPublish = PreprocessImage(frameContext.Frame);
 
-                var ctx = new VideoFrameContext(frameContext.Timestamp, frameContext.FrameCount, this.Info);
-
-#pragma warning disable CA2000 // Dispose objects before losing scope
-                var videoFrame = new VideoFrame(imageToPublish, ctx)
+                if (imageToPublish is not null)
                 {
-                    TriggerId = triggerId
-                };
-                //object should not be disposed here, since it is written to a channel for further processing.
-#pragma warning restore CA2000 // Dispose objects before losing scope
+                    var ctx = new VideoFrameContext(frameContext.Timestamp, frameContext.FrameCount, this.Info);
 
-                if (_outputWriter.TryWrite(videoFrame))
-                {
-                    _logger.LogDebug("Producer: Published frame {timestamp}; {streamId}; of trigger: {triggerId}",
-                        videoFrame.Metadata.Timestamp, this.Info.Id, triggerId);
+                    var videoFrame = new VideoFrame(imageToPublish, ctx)
+                    {
+                        TriggerId = triggerId
+                    };
+                    //object should not be disposed here, since it is written to a channel for further processing.
+
+                    if (_outputWriter.TryWrite(videoFrame))
+                    {
+                        _logger.LogDebug("Producer: Published frame {timestamp}; {streamId}; of trigger: {triggerId}",
+                            videoFrame.Metadata.Timestamp, this.Info.Id, triggerId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Producer: Could not publish frame {timestamp}; {streamId}; of trigger: {triggerId}",
+                            videoFrame.Metadata.Timestamp, this.Info.Id, triggerId);
+                        videoFrame.Dispose();
+                    }
                 }
                 else
                 {
-                    _logger.LogWarning("Producer: Could not publish frame {timestamp}; {streamId}; of trigger: {triggerId}",
-                        videoFrame.Metadata.Timestamp, this.Info.Id, triggerId);
-                    videoFrame.Dispose();
+                    _logger.LogWarning("Snapshot failed: image was disposed");
                 }
             }
             else
@@ -310,19 +317,26 @@ namespace DetectiCam.Core.VideoCapturing
 
         public void CreateSnapshot(Stream outputStream)
         {
-            _logger.LogInformation($"Create Snapshot for [{StreamName}]");
+            _logger.LogInformation("Create Snapshot for [{StreamName}]", StreamName);
 
             if (_frameBufferReader.TryRead(out var frameContext))
             {
-                Mat imageToPublish = PreprocessImage(frameContext.Frame);
+                var imageToPublish = PreprocessImage(frameContext.Frame);
 
-                _logger.LogDebug("Snapshot: write snapshot to output stream");
+                if (imageToPublish is not null)
+                {
+                    _logger.LogDebug("Snapshot: write snapshot to output stream");
 
-                imageToPublish.WriteToStream(outputStream);
+                    imageToPublish.WriteToStream(outputStream);
+                }
+                else
+                {
+                    _logger.LogWarning("Snapshot failed: image was disposed");
+                }
             }
             else
             {
-                _logger.LogWarning("Snapshot: No frame available");
+                _logger.LogWarning("Snapshot failed: No frame available");
             }
         }
 

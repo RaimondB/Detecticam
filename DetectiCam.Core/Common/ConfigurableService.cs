@@ -33,7 +33,7 @@ namespace DetectiCam.Core.Common
             {
                 foreach (var failure in ex.Failures)
                 {
-                    Logger.LogError(failure);
+                    Logger.LogError("Invalid configuration:{failure}",failure);
                 }
                 throw;
             }

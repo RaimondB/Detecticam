@@ -49,13 +49,11 @@ namespace DetectiCam.Core.VideoCapturing
                         }
                     }
                 }
-#pragma warning disable S2737 // "catch" clauses should do more than rethrow
                 catch (OperationCanceledException) when (False(() =>
                     Logger.LogWarning("Transform operation cancelled")))
                 {
                     throw;
                 }
-#pragma warning restore S2737 // "catch" clauses should do more than rethrow
                 finally
                 {
                     _logger.LogInformation("Stopping:completing transform channel!");

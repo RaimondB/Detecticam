@@ -27,7 +27,7 @@ namespace DetectiCam
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            var outputDirectory = ((IConfiguration)ConfigRoot).GetValue<string>("ConfigDir");
+            var outputDirectory = ((IConfiguration)ConfigRoot).GetValue<string>("ConfigDir", Directory.GetCurrentDirectory())!;
 
             var targetFilePath = Path.GetFullPath("appsettings.json", outputDirectory);
             if (File.Exists(targetFilePath))

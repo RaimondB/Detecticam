@@ -73,29 +73,35 @@ namespace DetectiCam.Core.ResultProcessor
             {
                 if (frame is null) throw new ArgumentNullException(nameof(frame));
 
-                var output = new { detection = true,
-                    detectedObjects = Options.IncludeDetectedObjects ? 
-                        frame.Metadata.AnalysisResult
-                            .OrderByDescending(r => r.Probability)
-                            .Take(Options.TopDetectedObjectsLimit)
-                            .Select((dob,i) => DetectedObject.ConvertFrom(dob))
-                            .ToList()
-                        : null 
+                if (frame.Metadata.AnalysisResult is not null)
+                {
+                    var output = new
+                    {
+                        detection = true,
+                        detectedObjects = Options.IncludeDetectedObjects ?
+                            frame.Metadata.AnalysisResult
+                                .OrderByDescending(r => r.Probability)
+                                .Take(Options.TopDetectedObjectsLimit)
+                                .Select((dob, i) => DetectedObject.ConvertFrom(dob))
+                                .ToList()
+                            : null
                     };
 
-                string strValue = JsonSerializer.Serialize(output,
-                    new JsonSerializerOptions()
-                    {
-                        IgnoreNullValues = true
-                    });
+                    string strValue = JsonSerializer.Serialize(output,
+                        new JsonSerializerOptions()
+                        {
+                            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                        });
 
-                string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/state";
+                    string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/state";
 
-                Logger.LogInformation("Published detection to:{0}", topic);
-                // publish a message on "/home/temperature" topic with QoS 2 
-                _client.Publish(topic,
-                    Encoding.UTF8.GetBytes(strValue),
-                    MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, false);
+                    Logger.LogInformation("Published detection to:{topic}", topic);
+                    
+                    // publish a message on configured topic with QoS 2 
+                    _client.Publish(topic,
+                        Encoding.UTF8.GetBytes(strValue),
+                        MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, false);
+                }
             }
             return Task.CompletedTask;
         }

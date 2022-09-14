@@ -11,7 +11,7 @@ namespace DetectiCam.Core.Visualization
         {
             if (detectedObjects == null) throw new ArgumentNullException(nameof(detectedObjects));
 
-            Mat result = new Mat();
+            Mat result = new();
             Cv2.CopyTo(orgImage, result);
             foreach (var dObj in detectedObjects)
             {

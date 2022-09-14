@@ -14,10 +14,8 @@ namespace DetectiCam.Core.VideoCapturing
         public int Index { get; }
         public VideoStreamInfo Info { get; }
 
-#pragma warning disable CA2227 // Collection properties should be read only
         //For performance reasons it is allowed to direct attach the list.
         public IList<DnnDetectedObject>? AnalysisResult { get; set; }
-#pragma warning restore CA2227 // Collection properties should be read only
 
         public VideoFrameContext(DateTime timestamp, int index, VideoStreamInfo info)
         {

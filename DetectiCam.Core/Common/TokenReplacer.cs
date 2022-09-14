@@ -1,14 +1,15 @@
 ﻿using DetectiCam.Core.VideoCapturing;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace DetectiCam.Core.Common
 {
-    public static class TokenReplacer
+    public static partial class TokenReplacer
     {
-        private static readonly Regex _patternMatcher = new Regex(@"(\{.+\})", RegexOptions.Compiled);
+        private static readonly Regex _patternMatcher = CreateDatePatternRegex();
 
         public static string ReplaceTokens(string pattern, VideoFrame frame)
         {
@@ -42,9 +43,10 @@ namespace DetectiCam.Core.Common
 
         private static string ReplaceDetectedObjectsToken(string pattern, VideoFrame frame)
         {
-            if (pattern.Contains("{dobj}", StringComparison.OrdinalIgnoreCase))
+            if (pattern.Contains("{dobj}", StringComparison.OrdinalIgnoreCase) &&
+                frame.Metadata.AnalysisResult is IList<Detection.DnnDetectedObject> results)
             {
-                var objectList = String.Join(',', frame.Metadata.AnalysisResult.Select(d => d.Label).Distinct());
+                var objectList = string.Join(',', frame.Metadata.AnalysisResult.Select(d => d.Label).Distinct());
 
                 return pattern.Replace("{dobj}", objectList, StringComparison.OrdinalIgnoreCase);
             }
@@ -63,5 +65,7 @@ namespace DetectiCam.Core.Common
             return result;
         }
 
+        [RegexGenerator("(\\{.+\\})", RegexOptions.Compiled)]
+        private static partial Regex CreateDatePatternRegex();
     }
 }

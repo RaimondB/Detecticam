@@ -57,8 +57,8 @@ namespace DetectiCam.Core.Detection
         public void Initialize()
         {
             Logger.LogInformation("Start Detector initalize & warmup");
-            using Mat dummy1 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
-            using Mat dummy2 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
+            using Mat dummy1 = new(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
+            using Mat dummy2 = new(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
 
             var images = new List<Mat>
             {
@@ -70,7 +70,7 @@ namespace DetectiCam.Core.Detection
         }
 
         private const double scaleFactor = 1.0 / 255;
-        private readonly Size scaleSize = new Size(320, 320);
+        private readonly Size scaleSize = new(320, 320);
 
         public IList<DnnDetectedObject[]> ClassifyObjects(IList<VideoFrame> frames, float detectionThreshold)
         {
@@ -145,10 +145,10 @@ namespace DetectiCam.Core.Detection
             }
         }
 
-        private readonly List<int> _classIds = new List<int>();
-        private readonly List<float> _confidences = new List<float>();
-        private readonly List<float> _probabilities = new List<float>();
-        private readonly List<Rect2d> _boxes = new List<Rect2d>();
+        private readonly List<int> _classIds = new();
+        private readonly List<float> _confidences = new();
+        private readonly List<float> _probabilities = new();
+        private readonly List<Rect2d> _boxes = new();
 
 
         private IList<DnnDetectedObject[]> ExtractYoloBatchedResults(IEnumerable<Mat> output, IEnumerable<Mat> image, float threshold, float nmsThreshold, bool nms = true)

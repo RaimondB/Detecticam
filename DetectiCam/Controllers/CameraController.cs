@@ -74,11 +74,14 @@ namespace DetectiCam.Controllers
                     }.ToString());
 
                     ms.Seek(0, SeekOrigin.Begin);
+                    _logger.LogInformation("Snapshot created");
 
                     return File(ms, "image/png");
                 }
                 else
                 {
+                    _logger.LogWarning("Snapshot failed");
+
                     return NoContent();
                 }
             }

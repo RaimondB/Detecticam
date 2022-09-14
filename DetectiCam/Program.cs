@@ -3,7 +3,7 @@ using DetectiCam.Core.Common;
 using DetectiCam.Core.Detection;
 using DetectiCam.Core.ResultProcessor;
 using DetectiCam.Core.VideoCapturing;
-using Microsoft.AspNetCore.Hosting;
+//using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,10 +26,10 @@ namespace DetectiCam
 
                 config.AddEnvironmentVariables(prefix: "CAMERAWATCH_");
             })
-            .ConfigureWebHostDefaults(webBuilder =>
-            {
-                webBuilder.UseStartup<Startup>();
-            })
+            //.ConfigureWebHostDefaults(webBuilder =>
+            //{
+            //    webBuilder.UseStartup<Startup>();
+            //})
             .ConfigureServices((hostContext, services) =>
             {
                 services.AddOptions<MqttPublisherOptions>()
@@ -102,7 +102,7 @@ namespace DetectiCam
                 //Console.WriteLine($"ConfigDir not specified, falling back to default location:{configPath}");
             }
 
-            var Dict = new Dictionary<string, string>
+            var Dict = new Dictionary<string, string?>
                 {
                     {"ConfigDir", configPath}
                 };

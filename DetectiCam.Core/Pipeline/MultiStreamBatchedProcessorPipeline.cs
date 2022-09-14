@@ -21,7 +21,7 @@ namespace DetectiCam.Core.VideoCapturing
     {
         private readonly List<IAsyncSingleResultProcessor> _resultProcessors;
 
-        private readonly Dictionary<string,VideoStreamGrabber> _streams = new Dictionary<string,VideoStreamGrabber>();
+        private readonly Dictionary<string,VideoStreamGrabber> _streams = new();
         private readonly VideoStreamsOptions _streamsConfig;
         private readonly DetectionOptions _detectionOptions;
 
@@ -89,12 +89,12 @@ namespace DetectiCam.Core.VideoCapturing
                 SingleWriter = true
             });
 
-        private readonly List<Channel<VideoFrame>> _capturingChannels = new List<Channel<VideoFrame>>();
+        private readonly List<Channel<VideoFrame>> _capturingChannels = new();
 
         public async Task StartCapturingAllStreamsAsync(CancellationToken cancellationToken)
         {
             Logger.LogInformation("Start Capturing All Streams");
-            List<Task> streamsStartedTasks = new List<Task>();
+            List<Task> streamsStartedTasks = new();
 
             foreach (var stream in _streams.Values)
             {
@@ -115,7 +115,7 @@ namespace DetectiCam.Core.VideoCapturing
             var newChannel = CreateCapturingChannel();
             _capturingChannels.Add(newChannel);
 
-            VideoStreamGrabber vs = new VideoStreamGrabber(Logger, streamInfo, newChannel);
+            VideoStreamGrabber vs = new(Logger, streamInfo, newChannel);
 
             _streams[vs.StreamName] = vs;
 
