@@ -5,6 +5,7 @@ using DetectiCam.Core.ResultProcessor;
 
 namespace DetectiCam.Core.VideoCapturing
 {
+    [Serializable]
     public class VideoStreamInfo
     {
         public string Id { get; set; } = default!;

@@ -45,6 +45,9 @@ namespace DetectiCam.Core.Detection
             Colors = Enumerable.Repeat(false, Labels.Length).Select(x => Scalar.RandomColor()).ToArray();
 
             Logger.LogInformation("Loading Neural Net");
+            Logger.LogDebug("Loading Config from [{path}]", cfg);
+            Logger.LogDebug("Loading Weights from [{path}]", weight);
+            Logger.LogDebug("Loading Names from [{path}]", names);
 
             //Does not result in a null object, but will trow exception on errors, so safe to assume non-null
             nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(cfg, weight)!;

@@ -27,6 +27,7 @@ namespace DetectiCam.Core.ResultProcessor
             base(logger, options)
         {
             _isEnabled = Options.Enabled;
+            logger.LogDebug("Mqttpublisher enabled: {isenabled}", _isEnabled);
 
             if (_isEnabled)
             {
@@ -60,7 +61,7 @@ namespace DetectiCam.Core.ResultProcessor
                         Logger.LogInformation("MQTT Client connected");
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Logger.LogError(ex, "Error in MQTTPUblisher");
                 }
@@ -69,46 +70,46 @@ namespace DetectiCam.Core.ResultProcessor
 
         public Task ProcessResultAsync(VideoFrame frame)
         {
-            if (_isEnabled && _client != null)
-            {
-                if (frame is null) throw new ArgumentNullException(nameof(frame));
+            //if (_isEnabled && _client != null)
+            //{
+            //    if (frame is null) throw new ArgumentNullException(nameof(frame));
 
-                if (frame.Metadata.AnalysisResult is not null)
-                {
-                    var output = new
-                    {
-                        detection = true,
-                        detectedObjects = Options.IncludeDetectedObjects ?
-                            frame.Metadata.AnalysisResult
-                                .OrderByDescending(r => r.Probability)
-                                .Take(Options.TopDetectedObjectsLimit)
-                                .Select((dob, i) => DetectedObject.ConvertFrom(dob))
-                                .ToList()
-                            : null
-                    };
+            //    if (frame.Metadata.AnalysisResult is not null)
+            //    {
+            //        var output = new
+            //        {
+            //            detection = true,
+            //            detectedObjects = Options.IncludeDetectedObjects ?
+            //                frame.Metadata.AnalysisResult
+            //                    .OrderByDescending(r => r.Probability)
+            //                    .Take(Options.TopDetectedObjectsLimit)
+            //                    .Select((dob, i) => DetectedObject.ConvertFrom(dob))
+            //                    .ToList()
+            //                : null
+            //        };
 
-                    string strValue = JsonSerializer.Serialize(output,
-                        new JsonSerializerOptions()
-                        {
-                            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-                        });
+            //        string strValue = JsonSerializer.Serialize(output,
+            //            new JsonSerializerOptions()
+            //            {
+            //                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            //            });
 
-                    string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/state";
+            //        string topic = $"{_topicPrefix}detect-i-cam/{frame.Metadata.Info.Id}/state";
 
-                    Logger.LogInformation("Published detection to:{topic}", topic);
+            //        Logger.LogInformation("Published detection to:{topic}", topic);
                     
-                    // publish a message on configured topic with QoS 2 
-                    _client.Publish(topic,
-                        Encoding.UTF8.GetBytes(strValue),
-                        MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, false);
-                }
-            }
+            //        // publish a message on configured topic with QoS 2 
+            //        _client.Publish(topic,
+            //            Encoding.UTF8.GetBytes(strValue),
+            //            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, false);
+            //    }
+            //}
             return Task.CompletedTask;
         }
 
         public Task StopProcessingAsync(CancellationToken cancellationToken)
         {
-            _client?.Disconnect();
+            //_client?.Disconnect();
             return Task.CompletedTask;
         }
     }

@@ -5,6 +5,7 @@
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <Nullable>Enable</Nullable>
+	  <PublishAot>true</PublishAot>
   </PropertyGroup> 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <NoWarn>1701;1702;1303</NoWarn>

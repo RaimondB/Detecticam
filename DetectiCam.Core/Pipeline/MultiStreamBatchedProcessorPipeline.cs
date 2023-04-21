@@ -47,7 +47,23 @@ namespace DetectiCam.Core.VideoCapturing
             _resultProcessors = new List<IAsyncSingleResultProcessor>(resultProcessors);
             _healthCheck = healthCheck;
 
-            _streamsConfig = Options;
+            //TEMP _streamsConfig = Options;
+            _streamsConfig = new VideoStreamsOptions();
+            //_streamsConfig.Add(new VideoStreamInfo()
+            //{
+            //    Id = "test-video",
+            //    Path = "C:\\Users\\raimondb\\source\\repos\\Detecticam\\DetectiCam\\docker-test\\config\\london-walk-trim.mp4",
+            //    IsContinuous = false
+            //});
+            _streamsConfig.Add(new VideoStreamInfo()
+            {
+                Id = "front-door-live",
+                Path = "rtsp://admin:nCmDZx8U@192.168.7.125:554/Streaming/Channels/102"
+            });
+
+            //      "id": "front-door-live",
+            //      "path": "rtsp://admin:nCmDZx8U@192.168.7.125:554/Streaming/Channels/102" //,
+
             _detectionOptions = GetValidatedOptions(detectionOptions);
 
             Logger.LogInformation("Loaded configuration for {numberOfStreams} streams:{streamIds}",

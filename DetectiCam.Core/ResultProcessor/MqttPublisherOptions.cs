@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DetectiCam.Core.Detection
 {
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public class MqttPublisherOptions
     {
         public const string MqttPublisher = "mqtt-publisher";

@@ -1,6 +1,14 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using DetectiCam.Core.Detection;
+using DetectiCam.Core.VideoCapturing;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.VisualBasic;
 using System;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DetectiCam.Core.Common
 {
@@ -27,7 +35,14 @@ namespace DetectiCam.Core.Common
 
             try
             {
+                var jsoptions = new JsonSerializerOptions();
+                jsoptions.AddContext<JsonContext>();
+
+                //using var memStream = new MemoryStream();
+                //using var outputData = new StreamWriter(memStream, System.Text.Encoding.UTF8);
+                Logger.LogDebug("Getting option value for type {type}:{value}", typeof(T).Name, System.Text.Json.JsonSerializer.Serialize<T>(options.Value, jsoptions));
                 return options.Value;
+                //return default(T);
             }
             catch (OptionsValidationException ex)
             {
@@ -39,4 +54,15 @@ namespace DetectiCam.Core.Common
             }
         }
     }
+
+
+    [JsonSerializable(typeof(CapturePublisherOptions))]
+    [JsonSerializable(typeof(VideoStreamsOptions))]
+    [JsonSerializable(typeof(Collection<VideoStreamInfo>))]
+    [JsonSerializable(typeof(MqttPublisherOptions))]
+    [JsonSerializable(typeof(DetectionOptions))]
+    [JsonSerializable(typeof(Yolo3Options))]
+    public partial class JsonContext : JsonSerializerContext
+    { }
+
 }

@@ -1,5 +1,5 @@
 ﻿using DetectiCam.Core.VideoCapturing;
-using Microsoft.AspNetCore.Mvc;
+//using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -13,9 +13,9 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CameraController : ControllerBase
+//    [Route("api/[controller]")]
+//    [ApiController]
+    public class CameraController //: ControllerBase
     {
         private readonly ILogger _logger;
         private readonly VideoStreamsOptions _options;
@@ -40,8 +40,9 @@ namespace DetectiCam.Controllers
         }
 
 
-        [HttpGet]
-        public ActionResult<IEnumerable<string>> Get()
+        //        [HttpGet]
+        //        public ActionResult<IEnumerable<string>> Get()
+        public IEnumerable<string> Get()
         {
             if (_snapshotOptions.Enabled)
             {
@@ -49,46 +50,46 @@ namespace DetectiCam.Controllers
             }
             else
             {
-                return NotFound();
+                return null; // NotFound();
             }
         }
 
-        [HttpGet("{streamId}/snapshot")]
-        public IActionResult CreateSnapshot(string streamId)
-        {
-            if (_snapshotOptions.Enabled)
-            {
+////        [HttpGet("{streamId}/snapshot")]
+//        public IActionResult CreateSnapshot(string streamId)
+//        {
+//            if (_snapshotOptions.Enabled)
+//            {
 
-                var ms = new MemoryStream();
+//                var ms = new MemoryStream();
 
-                var grabber = _pipeline.GetGrabberForStream(streamId);
+//                var grabber = _pipeline.GetGrabberForStream(streamId);
 
-                if (grabber != null)
-                {
-                    grabber.CreateSnapshot(ms);
+//                if (grabber != null)
+//                {
+//                    grabber.CreateSnapshot(ms);
 
-                    Response.Headers.Add("Content-Disposition", new ContentDisposition
-                    {
-                        FileName = $"Snapshot-{DateTime.Now:s}.png",
-                        Inline = true // false = prompt the user for downloading; true = browser to try to show the file inline
-                    }.ToString());
+//                    Response.Headers.Add("Content-Disposition", new ContentDisposition
+//                    {
+//                        FileName = $"Snapshot-{DateTime.Now:s}.png",
+//                        Inline = true // false = prompt the user for downloading; true = browser to try to show the file inline
+//                    }.ToString());
 
-                    ms.Seek(0, SeekOrigin.Begin);
-                    _logger.LogInformation("Snapshot created");
+//                    ms.Seek(0, SeekOrigin.Begin);
+//                    _logger.LogInformation("Snapshot created");
 
-                    return File(ms, "image/png");
-                }
-                else
-                {
-                    _logger.LogWarning("Snapshot failed");
+//                    return File(ms, "image/png");
+//                }
+//                else
+//                {
+//                    _logger.LogWarning("Snapshot failed");
 
-                    return NoContent();
-                }
-            }
-            else
-            {
-                return NotFound();
-            }
-        }
+//                    return NoContent();
+//                }
+//            }
+//            else
+//            {
+//                return NotFound();
+//            }
+//        }
     }
 }
