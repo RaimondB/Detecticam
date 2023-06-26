@@ -50,7 +50,7 @@ namespace DetectiCam.Core.VideoCapturing
                             var curReader = _inputReaders[index];
                             if (curReader != null)
                             {
-                                var result = await curReader.ReadAsync(linkedToken).ConfigureAwait(false);
+                                var result = await curReader.ReadAsync(cts.Token).ConfigureAwait(false);
                                 results.Add(result);
                             }
                         }
