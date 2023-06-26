@@ -90,7 +90,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             {
                 for (int x = 1; x <= 5; x++)
                 {
-                    await _firstInput.Writer.WriteAsync(x);
+                    await _firstInput.Writer.WriteAsync(x).ConfigureAwait(false);
                 }
                 _firstInput.Writer.Complete();
             });
@@ -99,13 +99,13 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             {
                 for (int y = 5; y >= 1; y--)
                 {
-                    await _secondInput.Writer.WriteAsync(y);
+                    await _secondInput.Writer.WriteAsync(y).ConfigureAwait(false);
                 }
                 _secondInput.Writer.Complete();
             });
 
-            await _sut.StopProcessingAsync();
-            await Task.WhenAll(task, firstTask, secondTask);
+            await _sut.StopProcessingAsync().ConfigureAwait(false);
+            await Task.WhenAll(task, firstTask, secondTask).ConfigureAwait(false);
 
             if (_output.Reader.TryRead(out var result))
             {
@@ -123,7 +123,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             {
                 for (int x = 1; x <= 5; x++)
                 {
-                    await _firstInput.Writer.WriteAsync(x);
+                    await _firstInput.Writer.WriteAsync(x).ConfigureAwait(false);
                 }
                 _firstInput.Writer.Complete();
             });
@@ -132,7 +132,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
             {
                 for (int y = 5; y >= 2; y--)
                 {
-                    await _secondInput.Writer.WriteAsync(y);
+                    await _secondInput.Writer.WriteAsync(y).ConfigureAwait(false);
                     if (y == 3)
                     {
                         _cts.Cancel();
@@ -141,7 +141,7 @@ namespace DetectiCam.Core.VideoCapturing.Tests
                 _secondInput.Writer.Complete();
             });
 
-            await Task.WhenAll(task,firstTask,secondTask);
+            await Task.WhenAll(task,firstTask,secondTask).ConfigureAwait(false);
             Assert.Fail("Should not be here since cancellation will throw");
         }
     }

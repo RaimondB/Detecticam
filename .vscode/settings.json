@@ -1,5 +1,6 @@
 {
     "conventionalCommits.scopes": [
         "detecticam"
-    ]
+    ],
+    "dotnet.defaultSolution": "DetectiCam.sln"
 }
