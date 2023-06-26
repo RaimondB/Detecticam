@@ -58,24 +58,24 @@ namespace DetectiCam.Core.VideoCapturing.Tests
 
             for (int x = 1; x <= 5; x++)
             {
-                await _firstInput.Writer.WriteAsync(x);
+                await _firstInput.Writer.WriteAsync(x).ConfigureAwait(false);
             }
             _firstInput.Writer.Complete();
 
             for (int y = 5; y >= 1; y--)
             {
-                await _secondInput.Writer.WriteAsync(y);
+                await _secondInput.Writer.WriteAsync(y).ConfigureAwait(false);
             }
             _secondInput.Writer.Complete();
 
             int noResults = 0;
-            await foreach (var result in _output.Reader.ReadAllAsync(_cts.Token))
+            await foreach (var result in _output.Reader.ReadAllAsync(_cts.Token).ConfigureAwait(false))
             {
                 Assert.AreEqual(2, result.Count);
                 Assert.AreEqual(6, result.Sum());
                 noResults++;
             }
-            await task;
+            await task.ConfigureAwait(false);
             Assert.AreEqual(5, noResults);
         }
 
