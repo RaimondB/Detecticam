@@ -4,9 +4,9 @@ RUN apt-get update && apt-get install -y \
     libgtk2.0-0 \
 	  libtesseract4 \
 	  libdc1394-22 \
-	  libavformat57 \
-	  libswscale4 \
-	  libopenexr22 \
+	  libavformat58 \
+	  libswscale5 \
+	  libopenexr24 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"]
