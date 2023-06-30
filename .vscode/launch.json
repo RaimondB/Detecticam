@@ -14,7 +14,10 @@
             "args": [],
             "cwd": "${workspaceFolder}/DetectiCam",
             "stopAtEntry": false,
-            "console": "internalConsole"
+            "console": "internalConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            }
         },
         {
             "name": ".NET Core Launch (web)",

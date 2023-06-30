@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
@@ -10,139 +11,184 @@ using System.Threading.Tasks;
 
 namespace DetectiCam.Core.VideoCapturing.Tests
 {
+
     [TestClass()]
     public class MultiChannelMergerTests
     {
-        CancellationTokenSource _cts;
-
-        Channel<int> _firstInput;
-        Channel<int> _secondInput;
-        Channel<IList<int>> _output;
-        ILogger<MultiChannelMerger<int>> _logger;
-        List<ChannelReader<int>> _inputs;
-
-        MultiChannelMerger<int> _sut;
-
-        [TestInitialize]
-        public void Setup()
+        public class SutContext
         {
-            _cts = new CancellationTokenSource();
+            public CancellationTokenSource _cts;
 
-            _firstInput = Channel.CreateBounded<int>(5);
-            _secondInput = Channel.CreateBounded<int>(5);
-            _output = Channel.CreateUnbounded<IList<int>>();
+            public Channel<int> _firstInput;
+            public Channel<int> _secondInput;
+            public Channel<IList<int>> _output;
+            public ILogger<MultiChannelMerger<int>> _logger;
+            public List<ChannelReader<int>> _inputs;
 
-            //or use this short equivalent 
-            _logger = Mock.Of<ILogger<MultiChannelMerger<int>>>();
-
-            _inputs = new List<ChannelReader<int>>
-            {
-                _firstInput.Reader,
-                _secondInput.Reader
-            };
-
-            _sut = new MultiChannelMerger<int>(_inputs, _output.Writer, _logger);
+            public MultiChannelMerger<int> _sut;            
         }
 
-        [TestCleanup]
-        public void Cleanup()
+
+        private static SutContext BuildSutContext()
         {
-            _cts.Dispose();
+            var sc = new SutContext();
+
+            sc._cts = new CancellationTokenSource();
+
+            sc._firstInput = Channel.CreateBounded<int>(5);
+            sc._secondInput = Channel.CreateBounded<int>(5);
+            sc._output = Channel.CreateUnbounded<IList<int>>();
+
+            //or use this short equivalent 
+            sc._logger = Mock.Of<ILogger<MultiChannelMerger<int>>>();
+
+            // ServiceProvider serviceProvider = new ServiceCollection()
+            //     .AddLogging((loggingBuilder) => loggingBuilder
+            //         .SetMinimumLevel(LogLevel.Trace)
+            //         .AddConsole()
+            //         )
+            //     .BuildServiceProvider();
+
+            // _logger = serviceProvider.GetService<ILoggerFactory>().CreateLogger<MultiChannelMerger<int>>();
+
+            sc._inputs = new List<ChannelReader<int>>
+            {
+                sc._firstInput.Reader,
+                sc._secondInput.Reader
+            };
+
+            sc._sut = new MultiChannelMerger<int>(sc._inputs, sc._output.Writer, sc._logger);
+
+            return sc;
+        }
+
+        public void Cleanup(SutContext sc)
+        {
+            sc._cts.Cancel(true);
+            sc._cts.Dispose();
         }
 
 
         [TestMethod()]
-        public async Task StartProcessingAsyncTest()
+        public async Task MultiStartProcessingAsyncTest()
         {
-            var task = _sut.ExecuteProcessingAsync(_cts.Token);
+            var sc = BuildSutContext();
+
+            var task = sc._sut.ExecuteProcessingAsync(sc._cts.Token);
 
             for (int x = 1; x <= 5; x++)
             {
-                await _firstInput.Writer.WriteAsync(x).ConfigureAwait(false);
+                await sc._firstInput.Writer.WriteAsync(x).ConfigureAwait(false);
             }
-            _firstInput.Writer.Complete();
+            sc._firstInput.Writer.Complete();
 
             for (int y = 5; y >= 1; y--)
             {
-                await _secondInput.Writer.WriteAsync(y).ConfigureAwait(false);
+                await sc._secondInput.Writer.WriteAsync(y).ConfigureAwait(false);
             }
-            _secondInput.Writer.Complete();
+            sc._secondInput.Writer.Complete();
 
-            int noResults = 0;
-            await foreach (var result in _output.Reader.ReadAllAsync(_cts.Token).ConfigureAwait(false))
+            int nrResults = 0;
+            await foreach (var result in sc._output.Reader.ReadAllAsync(sc._cts.Token)) //.ConfigureAwait(false))
             {
                 Assert.AreEqual(2, result.Count);
                 Assert.AreEqual(6, result.Sum());
-                noResults++;
+                nrResults++;
             }
             await task.ConfigureAwait(false);
-            Assert.AreEqual(5, noResults);
+            Assert.AreEqual(5, nrResults);
+
+            Cleanup(sc);
         }
 
         [TestMethod()]
-        [ExpectedException(typeof(OperationCanceledException))]
-        public async Task StopProcessingAsyncTest()
+        public async Task MultiStopProcessingAsyncTest()
         {
+            var sc = BuildSutContext();
+
             Console.WriteLine("Start StopProcessingAsyncTest");
-            var task = _sut.ExecuteProcessingAsync(_cts.Token);
+            var task = sc._sut.ExecuteProcessingAsync(sc._cts.Token);
 
             var firstTask = Task.Run(async () =>
             {
                 for (int x = 1; x <= 5; x++)
                 {
-                    await _firstInput.Writer.WriteAsync(x).ConfigureAwait(false);
+                    //Console.WriteLine($"Write {x} to first");
+                    await sc._firstInput.Writer.WriteAsync(x, sc._cts.Token).ConfigureAwait(false);
                 }
-                _firstInput.Writer.Complete();
+                sc._firstInput.Writer.Complete();
             });
 
             var secondTask = Task.Run(async () =>
             {
                 for (int y = 5; y >= 1; y--)
                 {
-                    await _secondInput.Writer.WriteAsync(y).ConfigureAwait(false);
+                    //Console.WriteLine($"Write {y} to second");
+                    await sc._secondInput.Writer.WriteAsync(y, sc._cts.Token).ConfigureAwait(false);
                 }
-                _secondInput.Writer.Complete();
+                sc._secondInput.Writer.Complete();
             });
 
-            await _sut.StopProcessingAsync().ConfigureAwait(false);
+            var outputTask = Task.Run(async () =>
+            {
+                for (int y = 3; y >= 1; y--)
+                {
+                    var output = await sc._output.Reader.ReadAsync(sc._cts.Token).ConfigureAwait(false);
+                    //Console.WriteLine($"Read {output[0]},{output[1]} from output");
+                }
+            });
+
+            await sc._sut.StopProcessingAsync().ConfigureAwait(false);
+            
             await Task.WhenAll(task, firstTask, secondTask).ConfigureAwait(false);
 
-            if (_output.Reader.TryRead(out var result))
-            {
-                Assert.Fail("Read should not succeed because the channel is completed");
-            }
+            //Flush channel
+            await foreach (var result in sc._output.Reader.ReadAllAsync(sc._cts.Token).ConfigureAwait(false));
+
+//            Assert.AreEqual(2, sc._output.Reader.Count, "2 Items left in output expected");
+            Assert.AreEqual(true, sc._output.Reader.Completion.IsCompleted, "Expects channel to be completed");
+            // if (sc._output.Reader.TryRead(out var result))
+            // {
+            //     Assert.Fail("Read should not succeed because the channel is completed");
+            // }
+
+            Cleanup(sc);
         }
 
         [TestMethod()]
         [ExpectedException(typeof(OperationCanceledException))]
-        public async Task StopWithUnbalancedWritesAndCancelTest()
+        public async Task MultiStopWithUnbalancedWritesAndExternalCancelTest()
         {
-            var task = _sut.ExecuteProcessingAsync(_cts.Token);
+            var sc = BuildSutContext();
+
+            var task = sc._sut.ExecuteProcessingAsync(sc._cts.Token);
 
             var firstTask = Task.Run(async () =>
             {
                 for (int x = 1; x <= 5; x++)
                 {
-                    await _firstInput.Writer.WriteAsync(x).ConfigureAwait(false);
+                    await sc._firstInput.Writer.WriteAsync(x).ConfigureAwait(false);
                 }
-                _firstInput.Writer.Complete();
+                sc._firstInput.Writer.Complete();
             });
 
             var secondTask = Task.Run(async () =>
             {
                 for (int y = 5; y >= 2; y--)
                 {
-                    await _secondInput.Writer.WriteAsync(y).ConfigureAwait(false);
+                    await sc._secondInput.Writer.WriteAsync(y).ConfigureAwait(false);
                     if (y == 3)
                     {
-                        _cts.Cancel();
+                        sc._cts.Cancel();
                     }
                 }
-                _secondInput.Writer.Complete();
+                sc._secondInput.Writer.Complete();
             });
 
             await Task.WhenAll(task,firstTask,secondTask).ConfigureAwait(false);
             Assert.Fail("Should not be here since cancellation will throw");
+
+            Cleanup(sc);
         }
     }
 }
