@@ -13,22 +13,32 @@
   },
   "homepage": "https://github.com/RaimondB/Detecticam#readme",
   "devDependencies": {
-    "@semantic-release/commit-analyzer": "^10.0.1",
-    "@semantic-release/git": "^10.0.1",
-    "semantic-release": "^21.0.7",
-    "semantic-release-docker": "^2.2.0"
+    "@semantic-release/commit-analyzer": "^8.0.1",
+    "@semantic-release/git": "^9.0.0",
+    "semantic-release": "^17.4.2",
+    "@eclass/semantic-release-docker": "^1.0.6"
   },
   "release": {
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/git",
-      "semantic-release-docker"
-    ],
-    "publish": [
-      {
-        "path": "semantic-release-docker",
-        "name": "raimondb/detect-i-cam"
-      }
+      [
+        "@eclass/semantic-release-docker",
+        {
+          "baseImageName": "detect-i-cam",
+          "registries": [
+            {
+              "url": "docker.io",
+              "imageName": "docker.io/raimondb/detect-i-cam",
+              "user": "DOCKER_REGISTRY_USER",
+              "password": "DOCKER_REGISTRY_PASSWORD"
+            }
+          ],
+          "additionalTags": [
+            "latest"
+          ]
+        }
+      ]
     ]
   }
 }
