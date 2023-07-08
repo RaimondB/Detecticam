@@ -35,8 +35,8 @@ jobs:
       run: docker-compose -f DetectiCam/docker-compose.test.yml run sut
 
   release:
+    if: ${{ github.ref_name == 'master'}}
     runs-on: ubuntu-20.04
-    if: ${{vars.GITHUB_REF_NAME == 'master'}}
     steps:
     - name: Build and export to Docker
       uses: docker/build-push-action@v4
