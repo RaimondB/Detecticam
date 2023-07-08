@@ -1,20 +1,20 @@
-FROM raimondb/opencv-dotnet-runtime-deps:0.23.0 AS base
+FROM raimondb/opencv-dotnet-runtime-deps:0.24.0 AS base
 COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"]
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y \
+#     curl \
+#     && rm -rf /var/lib/apt/lists/*
 
-FROM mcr.microsoft.com/dotnet/sdk:3.1.425-bionic AS build
+FROM mcr.microsoft.com/dotnet/sdk:6.0-focal AS build
 WORKDIR /src
 COPY ["DetectiCam/DetectiCam.csproj", "DetectiCam/"]
 COPY ["DetectiCam.Core/DetectiCam.Core.csproj", "DetectiCam.Core/"]
-RUN dotnet restore "DetectiCam/DetectiCam.csproj" --runtime ubuntu.18.04-x64
+RUN dotnet restore "DetectiCam/DetectiCam.csproj" --runtime ubuntu.20.04-x64
 COPY . .
 WORKDIR "/src/DetectiCam"
-RUN dotnet build "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 -o /app/build
+RUN dotnet build "DetectiCam.csproj" -c Release --runtime ubuntu.20.04-x64 -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "DetectiCam.csproj" -c Release --runtime ubuntu.18.04-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false -o /app/publish
+RUN dotnet publish "DetectiCam.csproj" -c Release --runtime ubuntu.20.04-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false -o /app/publish
 
 FROM base AS final
 VOLUME /captures

@@ -42,7 +42,8 @@ namespace DetectiCam.Core.Common
 
         private static string ReplaceDetectedObjectsToken(string pattern, VideoFrame frame)
         {
-            if (pattern.Contains("{dobj}", StringComparison.OrdinalIgnoreCase))
+            if (frame?.Metadata?.AnalysisResult is not null &&
+                pattern.Contains("{dobj}", StringComparison.OrdinalIgnoreCase))
             {
                 var objectList = String.Join(',', frame.Metadata.AnalysisResult.Select(d => d.Label).Distinct());
 

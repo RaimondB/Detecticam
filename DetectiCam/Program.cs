@@ -102,11 +102,11 @@ namespace DetectiCam
                 //Console.WriteLine($"ConfigDir not specified, falling back to default location:{configPath}");
             }
 
-            var Dict = new Dictionary<string, string>
+            var inMemConfigValues = new Dictionary<string, string>
                 {
                     {"ConfigDir", configPath}
                 };
-            config.AddInMemoryCollection(Dict);
+            config.AddInMemoryCollection(inMemConfigValues);
         }
 
         static async Task Main(string[] args)
