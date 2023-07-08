@@ -47,7 +47,7 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ./Detecticam/Dockerfile
+        file: DetectiCam/Dockerfile
         load: true
         tags: raimondb/detect-i-cam
     - uses: actions/setup-node@v3
