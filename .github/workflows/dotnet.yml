@@ -43,13 +43,14 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - name: Build and export to Docker
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        file: ./DetectiCam/Dockerfile
-        load: true
-        tags: raimondb/detect-i-cam
+    # - name: Build and export to Docker
+    #   uses: docker/build-push-action@v4
+    #   with:
+    #     context: .
+    #     file: DetectiCam/Dockerfile
+    #     load: true
+    #     tags: raimondb/detect-i-cam
+    - run: docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
     - uses: actions/setup-node@v3
       with:
 # See below for current versions supported by Node-red
