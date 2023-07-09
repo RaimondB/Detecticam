@@ -1,43 +1,15 @@
 # This workflow will build a .NET project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: .NET
+name: Docker Release
 
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
 
 jobs:
-  build:
-
-    runs-on: ubuntu-20.04
-
-    steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 6.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal
-    - name: Login to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - name: Integration Tests
-      run: docker-compose -f DetectiCam/docker-compose.test.yml run sut
-
   release:
     runs-on: ubuntu-20.04
-    needs: build
-    if: ${{github.ref_name == 'master'}}
     steps:
     - uses: actions/checkout@v3
     - name: Login to Docker Hub
@@ -45,14 +17,14 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-    # - name: Build and export to Docker
-    #   uses: docker/build-push-action@v4
-    #   with:
-    #     context: .
-    #     file: DetectiCam/Dockerfile
-    #     load: true
-    #     tags: raimondb/detect-i-cam
-    - run: docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
+    - name: Build and export to Docker
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: DetectiCam/Dockerfile
+        load: true
+        tags: raimondb/detect-i-cam
+    # - run: docker build -f DetectiCam/Dockerfile . -t raimondb/detect-i-cam
     - uses: actions/setup-node@v3
       with:
 # See below for current versions supported by Node-red
