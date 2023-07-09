@@ -6,6 +6,10 @@ updates:
     interval: daily
     time: "04:00"
   open-pull-requests-limit: 10
+  groups:
+       ms-extensions-dependencies:
+          patterns:
+            - "Microsoft.Extensions.*"
   # ignore:
   #     # Ignore .NET 7 related version
   #     - dependency-name: "Microsoft.Extensions.*"
