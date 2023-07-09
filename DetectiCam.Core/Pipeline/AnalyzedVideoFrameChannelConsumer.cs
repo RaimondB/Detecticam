@@ -86,11 +86,18 @@ namespace DetectiCam.Core.VideoCapturing
 
         private bool HasDetectedWhitelistedObjects(VideoFrame videoFrame)
         {
-            var detections = videoFrame.Metadata.AnalysisResult.Select(d => d.Label).ToList();
-            var whiteList = GetConsolidatedWhitelist(videoFrame);
+            if(videoFrame.Metadata.AnalysisResult != null)
+            {
+                var detections = videoFrame.Metadata.AnalysisResult.Select(d => d.Label).ToList();
+                var whiteList = GetConsolidatedWhitelist(videoFrame);
 
-            //Will return true if any of the whitelisted object was detected.
-            return whiteList.Overlaps(detections);
+                //Will return true if any of the whitelisted object was detected.
+                return whiteList.Overlaps(detections);
+            }
+            else
+            {
+                return false;
+            }
         }
 
         private HashSet<string> GetConsolidatedWhitelist(VideoFrame frame)

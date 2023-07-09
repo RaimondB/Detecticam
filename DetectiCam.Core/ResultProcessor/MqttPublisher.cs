@@ -69,7 +69,7 @@ namespace DetectiCam.Core.ResultProcessor
 
         public Task ProcessResultAsync(VideoFrame frame)
         {
-            if (_isEnabled && _client != null)
+            if (_isEnabled && _client != null && frame?.Metadata?.AnalysisResult is not null)
             {
                 if (frame is null) throw new ArgumentNullException(nameof(frame));
 
