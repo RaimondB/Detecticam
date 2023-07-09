@@ -2,11 +2,11 @@ name: automerge
 
 on:
   workflow_run:
-    workflows: ['.NET Build & Test']                     # runs after CI workflow
+    workflows: ['Build-Test']                     # runs after CI workflow
     types:
     - completed
-  # pull_request:
-  #   branches: [ master ]
+  #pull_request:
+  #  branches: [ master ]
   #   types:
   #     - labeled
   #     - unlabeled
