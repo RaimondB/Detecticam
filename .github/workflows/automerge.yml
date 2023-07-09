@@ -5,17 +5,17 @@ on:
     workflows: ['Build-Test']                     # runs after CI workflow
     types:
     - completed
-  #pull_request:
-  #  branches: [ master ]
-  #   types:
-  #     - labeled
-  #     - unlabeled
-  #     - synchronize
-  #     - opened
-  #     - edited
-  #     - ready_for_review
-  #     - reopened
-  #     - unlocked
+  pull_request:
+    branches: [ master ]
+    types:
+      - labeled
+      - unlabeled
+      - synchronize
+      - opened
+      - edited
+      - ready_for_review
+      - reopened
+      - unlocked
   pull_request_review:
     types:
       - submitted
@@ -34,6 +34,6 @@ jobs:
           MERGE_LABELS: "dependencies,!work in progress"
           UPDATE_LABELS: "dependencies,!work in progress"
           UPDATE_METHOD: "rebase"
-          MERGE_RETRIES: "6"
-          MERGE_RETRY_SLEEP: "20000"
+          MERGE_RETRIES: "5"
+          MERGE_RETRY_SLEEP: "5000"
 
