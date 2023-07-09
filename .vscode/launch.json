@@ -4,12 +4,27 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        
+        {
+            "name": ".NET Core Launch (console)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/DetectiCam/bin/Debug/net7.0/DetectiCam.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/DetectiCam",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development"
+            }
+        },
         {
             "name": ".NET Core Launch (web)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/DetectiCam/bin/Debug/netcoreapp3.1/DetectiCam.dll",
+            "program": "${workspaceFolder}/DetectiCam/bin/Debug/net7.0/DetectiCam.dll",
             "args": [],
             "cwd": "${workspaceFolder}/DetectiCam",
             "stopAtEntry": false,
