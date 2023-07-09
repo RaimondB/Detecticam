@@ -1,17 +1,21 @@
 name: automerge
 
 on:
-  pull_request:
-    branches: [ master ]
+  workflow_run:
+    workflows: ['.NET Build & Test']                     # runs after CI workflow
     types:
-      - labeled
-      - unlabeled
-      - synchronize
-      - opened
-      - edited
-      - ready_for_review
-      - reopened
-      - unlocked
+    - completed
+  # pull_request:
+  #   branches: [ master ]
+  #   types:
+  #     - labeled
+  #     - unlabeled
+  #     - synchronize
+  #     - opened
+  #     - edited
+  #     - ready_for_review
+  #     - reopened
+  #     - unlocked
   pull_request_review:
     types:
       - submitted
@@ -24,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: automerge
-        uses: "pascalgn/automerge-action@f81beb99aef41bb55ad072857d43073fba833a98"
+        uses: "pascalgn/automerge-action@v0.15.6"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           MERGE_LABELS: "dependencies,!work in progress"
