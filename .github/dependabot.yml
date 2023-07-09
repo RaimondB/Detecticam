@@ -6,6 +6,12 @@ updates:
     interval: daily
     time: "04:00"
   open-pull-requests-limit: 10
+  # ignore:
+  #     # Ignore .NET 7 related version
+  #     - dependency-name: "Microsoft.Extensions.*"
+  #       versions: ["7.x"]
+  #     - dependency-name: "Microsoft.NetCore.*"
+  #       versions: ["7.x"]
   commit-message:
       # Prefix all commit messages with "npm"
       prefix: "fix"
