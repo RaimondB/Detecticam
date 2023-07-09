@@ -4,10 +4,12 @@ services:
      build:
         context: ..
         dockerfile: DetectiCam/Dockerfile
+     ports:
+       - "7080:80"
      volumes:
        - "./docker-test/capture:/captures"
        - "./docker-test/config:/config"
-     command: /app/run_tests.sh
+     entrypoint: ["bash", "/app/run_tests.sh"]
      depends_on:
      - mqtt
   mqtt:
