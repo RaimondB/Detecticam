@@ -25,5 +25,5 @@ WORKDIR /app
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD curl -f http://localhost/health || exit 1
 COPY --from=publish /app/publish .
-#COPY ./run_tests.sh .
+COPY ./run_tests.sh .
 ENTRYPOINT ["./DetectiCam", "--configdir=/config"]
