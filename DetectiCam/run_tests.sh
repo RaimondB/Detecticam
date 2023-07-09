@@ -3,7 +3,7 @@
 echo "=== Start Test Run ==="
 ./DetectiCam --configdir=/config &
 PROC=$!
-sleep 5
+sleep 8
 
 echo "=== Check Snapshot ==="
 curl -o /tmp/snapshot.png -f http://localhost/api/camera/test-video/snapshot

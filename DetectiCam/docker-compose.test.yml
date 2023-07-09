@@ -9,7 +9,7 @@ services:
      volumes:
        - "./docker-test/capture:/captures"
        - "./docker-test/config:/config"
-     entrypoint: /app/run_tests.sh
+     entrypoint: ["bash", "/app/run_tests.sh"]
      depends_on:
      - mqtt
   mqtt:
