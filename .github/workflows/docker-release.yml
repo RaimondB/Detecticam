@@ -4,9 +4,9 @@
 name: Docker Release
 
 on:
-    push:
-        branches:
-        - master
+  push:
+    branches:
+    - master
     # workflow_run:
     #     workflows: ['.NET Build & Test']                     # runs after CI workflow
     #     types:
