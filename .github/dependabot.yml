@@ -19,14 +19,8 @@ updates:
             - "MSTest.*"
             - "Microsoft.NET.Test.*"
   ignore:
-    - dependency-name: "OpenCvSharp4"
-      versions: ["4.x"]
-    - dependency-name: "OpenCvSharp4_.runtime.ubuntu.20.04-x64"
-      versions: ["4.x"]
-    - dependency-name: "OpenCvSharp4.runtime.win"
-      versions: ["4.x"]
-    - dependency-name: "OpenCvSharp4.runtime.linux-arm"
-      versions: ["4.x"]
+    - dependency-name: "OpenCvSharp4*"
+      versions: ["4.*"]
 
   # ignore:
   #     # Ignore .NET 7 related version
