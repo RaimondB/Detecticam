@@ -1,4 +1,13 @@
 FROM raimondb/opencv-dotnet-runtime-deps:0.24.0 AS base
+
+# Ubuntu 18
+# RUN apt-get update && apt-get install -y \
+#     libgtk2.0-0 \
+# 	libtesseract4 \
+# 	libdc1394-22 \
+# 	libavformat57 \
+# 	libswscale4 \
+# 	libopenexr22
 COPY --from=raimondb/yolov3-data ["yolov3.weights", "yolov3.cfg", "coco.names", "/yolo-data/"]
 # RUN apt-get update && apt-get install -y \
 #     curl \
@@ -11,7 +20,7 @@ COPY ["DetectiCam.Core/DetectiCam.Core.csproj", "DetectiCam.Core/"]
 RUN dotnet restore "DetectiCam/DetectiCam.csproj" --runtime ubuntu.20.04-x64
 COPY . .
 WORKDIR "/src/DetectiCam"
-RUN dotnet build "DetectiCam.csproj" -c Release --runtime ubuntu.20.04-x64 -o /app/build
+RUN dotnet build "DetectiCam.csproj" -c Release --runtime ubuntu.20.04-x64 --self-contained true -o /app/build
 
 FROM build AS publish
 RUN dotnet publish "DetectiCam.csproj" -c Release --runtime ubuntu.20.04-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false -o /app/publish

@@ -125,6 +125,7 @@ namespace DetectiCam.Core.VideoCapturing
         public Task StartCapturing(CancellationToken cancellationToken)
         {
             //Create a completion source to signal the moment that the capturing has been started (or has failed).
+            //It is only signalled after the first capture, after that the task worker keeps running
             var capstureStartedTcs = new TaskCompletionSource<Object>();
 
             _executionTask = Task.Run(() =>

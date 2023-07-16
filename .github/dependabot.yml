@@ -7,17 +7,20 @@ updates:
     time: "04:00"
   open-pull-requests-limit: 10
   groups:
-       ms-extensions-dependencies:
-          patterns:
-            - "Microsoft.Extensions.*"
-       ms-platform-dependencies:
-          patterns:
-            - "Microsoft.NetCore.Platforms"
-            - "Microsoft.CodeAnalysis.*"
-      ms-test-dependencies:
-          patterns:
-            - "MSTest.*"
-            - "Microsoft.NET.Test.*"
+    ms-extensions-dependencies:
+      patterns:
+        - "Microsoft.Extensions.*"
+    ms-platform-dependencies:
+      patterns:
+        - "Microsoft.NetCore.Platforms"
+        - "Microsoft.CodeAnalysis.*"
+    ms-test-dependencies:
+      patterns:
+        - "MSTest.*"
+        - "Microsoft.NET.Test.*"
+  ignore:
+    - dependency-name: "OpenCvSharp4*"
+      versions: ["4.*"]
 
   # ignore:
   #     # Ignore .NET 7 related version

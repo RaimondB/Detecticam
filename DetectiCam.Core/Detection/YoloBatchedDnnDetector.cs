@@ -17,7 +17,7 @@ namespace DetectiCam.Core.Detection
         private readonly Scalar[] Colors;
         private readonly string[] Labels;
         private readonly OpenCvSharp.Dnn.Net nnet;
-        private readonly Mat[] outs;
+        private readonly OpenCvSharp.Mat[] outs;
         private readonly string[] _outNames;
         private readonly Dictionary<string, Region?> _roiConfig;
 
@@ -47,11 +47,28 @@ namespace DetectiCam.Core.Detection
             Logger.LogInformation("Loading Neural Net");
 
             //Does not result in a null object, but will trow exception on errors, so safe to assume non-null
-            nnet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(cfg, weight)!;
+            var createdNet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(cfg, weight);
 
-            _outNames = nnet.GetUnconnectedOutLayersNames()!;
+            if (createdNet is null)
+            {
+                throw new ApplicationException("Reading neural net did not succeed");
+            }
+            else
+            {
+                nnet = createdNet;
+            }
 
-            outs = Enumerable.Repeat(false, _outNames.Length).Select(_ => new Mat()).ToArray();
+            var outNames = nnet.GetUnconnectedOutLayersNames();
+            if (outNames is string[] && outNames.Length > 0)
+            {
+                _outNames = outNames;
+
+                outs = Enumerable.Repeat(false, _outNames.Length).Select(_ => new Mat()).ToArray();
+            }
+            else
+            {
+                throw new ApplicationException("No Outlayer found");
+            }
         }
 
         public void Initialize()
@@ -65,7 +82,8 @@ namespace DetectiCam.Core.Detection
                 dummy1,
                 dummy2
             };
-            InternalClassifyObjects(images, 0.5f);
+            _ = InternalClassifyObjects(images, 0.5f);
+
             Logger.LogInformation("Detector initalized");
         }
 
@@ -75,7 +93,7 @@ namespace DetectiCam.Core.Detection
         public IList<DnnDetectedObject[]> ClassifyObjects(IList<VideoFrame> frames, float detectionThreshold)
         {
             if (frames is null) throw new ArgumentNullException(nameof(frames));
-            
+
             //Crop frame to ROI if speficied
             var imageInfos = frames.Where(f => f.Image != null).Select(f =>
             {
@@ -87,10 +105,10 @@ namespace DetectiCam.Core.Detection
                     int bottomC = roi.Bottom.CropInRange(0, f.Image.Rows - 1);
                     int leftC = roi.Left.CropInRange(0, f.Image.Cols - 1);
                     int rightC = roi.Right.CropInRange(0, f.Image.Cols - 1);
-                    
+
                     var roiC = new Region() { Top = topC, Bottom = bottomC, Left = leftC, Right = rightC };
 
-                    if(topC != roi.Top || bottomC != roi.Bottom || leftC != roi.Left || rightC != roi.Right)
+                    if (topC != roi.Top || bottomC != roi.Bottom || leftC != roi.Left || rightC != roi.Right)
                     {
                         Logger.LogWarning("The configured ROI does not fit within the frame. Adjusted from {roi} to {roiC}", roi, roiC);
                     }
@@ -110,11 +128,12 @@ namespace DetectiCam.Core.Detection
 
             //Correct detected objects location based on ROI (shift relative to topleft of ROI)
             var correctedObjects = detectedObjects.Zip(imageInfos, (dobjs, inf) =>
-                inf.ROI == null ? dobjs : dobjs.Select(dobj => {
+                inf.ROI == null ? dobjs : dobjs.Select(dobj =>
+                {
                     var bb = dobj.BoundingBox;
                     dobj.BoundingBox = new Rect2d(bb.X + inf.ROI.Left, bb.Y + inf.ROI.Top, bb.Width, bb.Height);
                     return dobj;
-                }).ToArray()                                                                                                      
+                }).ToArray()
             ).ToList();
 
             //Cleanup the cropped images, since they are no longer needed
@@ -124,11 +143,12 @@ namespace DetectiCam.Core.Detection
             }
 
             return correctedObjects;
+            //return new List<DnnDetectedObject[]>(frames.Count);
         }
 
 
         private IList<DnnDetectedObject[]> InternalClassifyObjects(IList<Mat> images, float detectionThreshold)
-        { 
+        {
             using var blob = CvDnn.BlobFromImages(images, scaleFactor, scaleSize, crop: false);
             nnet.SetInput(blob);
 
@@ -143,6 +163,7 @@ namespace DetectiCam.Core.Detection
             {
                 return ExtractYoloBatchedResults(outs, images, detectionThreshold, nmsThreshold);
             }
+            //return new List<DnnDetectedObject[]>(images.Count);
         }
 
         private readonly List<int> _classIds = new List<int>();
@@ -335,6 +356,11 @@ namespace DetectiCam.Core.Detection
             if (nnet.IsEnabledDispose && !nnet.IsDisposed)
             {
                 nnet.Dispose();
+            }
+            
+            foreach (var item in outs)
+            {
+                item.SafeDispose();
             }
         }
     }
