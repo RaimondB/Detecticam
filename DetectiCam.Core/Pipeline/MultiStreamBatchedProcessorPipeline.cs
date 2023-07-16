@@ -93,19 +93,26 @@ namespace DetectiCam.Core.VideoCapturing
 
         public async Task StartCapturingAllStreamsAsync(CancellationToken cancellationToken)
         {
-            Logger.LogInformation("Start Capturing All Streams");
             List<Task> streamsStartedTasks = new List<Task>();
-
-            foreach (var stream in _streams.Values)
+            try
             {
-                Logger.LogInformation("Start Capturing: {streamId}", stream.Info.Id);
-                var captureStartedTask = stream.StartCapturing(cancellationToken);
-                Logger.LogInformation("Capturing Started: {streamId}", stream.Info.Id);
-                streamsStartedTasks.Add(captureStartedTask);
-            }
+                Logger.LogInformation("Start Capturing All Streams");
 
-            await Task.WhenAll(streamsStartedTasks).ConfigureAwait(false);
-            streamsStartedTasks.Clear();
+                foreach (var stream in _streams.Values)
+                {
+                    Logger.LogInformation("Start Capturing: {streamId}", stream.Info.Id);
+                    var captureStartedTask = stream.StartCapturing(cancellationToken);
+                    Logger.LogInformation("Capturing Started: {streamId}", stream.Info.Id);
+                    streamsStartedTasks.Add(captureStartedTask);
+                }
+
+                //await all start tasks, so that we are sure all streams are running
+                await Task.WhenAll(streamsStartedTasks).ConfigureAwait(false);
+            }
+            finally
+            {
+                streamsStartedTasks.Clear();
+            }
         }
 
         private void CreateCapturingChannel(VideoStreamInfo streamInfo)
