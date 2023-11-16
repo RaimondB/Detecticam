@@ -29,7 +29,7 @@
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.6.0.20220608" />
     <PackageReference Include="OpenCvSharp4.runtime.linux-arm" Version="4.6.0.20220608" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
-    <PackageReference Include="System.Threading.Channels" Version="7.0.0" />
+    <PackageReference Include="System.Threading.Channels" Version="8.0.0" />
   </ItemGroup>
 
 </Project>
