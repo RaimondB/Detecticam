@@ -1,5 +1,6 @@
 ﻿using DetectiCam.Core.Common;
 using DetectiCam.Core.VideoCapturing;
+using JetBrains.Profiler.Api;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenCvSharp;
@@ -26,6 +27,7 @@ namespace DetectiCam.Core.Detection
         public YoloBatchedDnnDetector(ILogger<YoloBatchedDnnDetector> logger, IOptions<Yolo3Options> yoloOptions, IOptions<VideoStreamsOptions> streamOptions) :
             base(logger, yoloOptions)
         {
+            MemoryProfiler.CollectAllocations(true);
             _roiConfig = GetValidatedOptions<VideoStreamsOptions>(streamOptions).
                 ToDictionary(o => o.Id, o => o.ROI);
 
@@ -46,8 +48,23 @@ namespace DetectiCam.Core.Detection
 
             Logger.LogInformation("Loading Neural Net");
 
+            MemoryProfiler.GetSnapshot("Before Darknet Load");
+
+
+            //using FileStream cfgFileStream = new FileStream(cfg, FileMode.Open, FileAccess.Read, FileShare.Read),
+            //                 weightFileStream = new FileStream(weight, FileMode.Open, FileAccess.Read, FileShare.Read);
+            //byte[]? cfgBuffer;
+            //byte[]? weightsBuffer;
+
+            var cfgBuffer = ReadFileInBuffer(cfg);//, out cfgBuffer);
+            var weightsBuffer = ReadFileInBuffer(weight);//, out weightsBuffer);
+
             //Does not result in a null object, but will trow exception on errors, so safe to assume non-null
-            var createdNet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(cfg, weight);
+            var createdNet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(cfgBuffer, weightsBuffer);
+
+            cfgBuffer = null;
+            weightsBuffer = null;
+            //var createdNet = OpenCvSharp.Dnn.CvDnn.ReadNetFromDarknet(cfgFileStream, weightFileStream);
 
             if (createdNet is null)
             {
@@ -69,22 +86,45 @@ namespace DetectiCam.Core.Detection
             {
                 throw new ApplicationException("No Outlayer found");
             }
+            MemoryProfiler.ForceGc();
+            //GC.Collect();
+            MemoryProfiler.GetSnapshot("After Darknet Load");
+        }
+
+        private byte[] ReadFileInBuffer(string filePath)
+        {
+            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var fileSize = fs.Length;
+            var fileBuffer = new byte[fileSize];
+
+            var readBytes = fs.Read(fileBuffer);
+            if(readBytes < fileSize)
+            {
+                throw new ApplicationException($"Could not read the whole file: {filePath}");
+            }
+            return fileBuffer;
         }
 
         public void Initialize()
         {
+            MemoryProfiler.GetSnapshot("Before Warmup");
+
             Logger.LogInformation("Start Detector initalize & warmup");
-            using Mat dummy1 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
-            using Mat dummy2 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
+            using Mat dummy1 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255)),
+                      dummy2 = new Mat(320, 320, MatType.CV_8UC3, new Scalar(0, 0, 255));
 
             var images = new List<Mat>
             {
                 dummy1,
-                dummy2
+//                dummy2
             };
             _ = InternalClassifyObjects(images, 0.5f);
+            images.Clear();
 
             Logger.LogInformation("Detector initalized");
+            MemoryProfiler.GetSnapshot("After Warmup");
+            MemoryProfiler.ForceGc();
+            MemoryProfiler.CollectAllocations(false);
         }
 
         private const double scaleFactor = 1.0 / 255;
@@ -117,14 +157,16 @@ namespace DetectiCam.Core.Detection
 
                 return new
                 {
-                    Image = roi == null ? f.Image : f.Image[new Range(roi.Top, roi.Bottom), new Range(roi.Left, roi.Right)],
+                    //Image = roi == null ? f.Image : f.Image[new Range(roi.Top, roi.Bottom), new Range(roi.Left, roi.Right)],
+                    Image = roi == null ? f.Image : f.Image.AdjustROI(roi.Top, roi.Bottom, roi.Left, roi.Right),
                     ROI = roi
                 };
 
             }).ToList();
 
+            var imageList = imageInfos.Select(f => f.Image).ToList();
             //Execute the core detection
-            var detectedObjects = InternalClassifyObjects(imageInfos.Select(f => f.Image).ToList(), detectionThreshold);
+            var detectedObjects = InternalClassifyObjects(imageList, detectionThreshold);
 
             //Correct detected objects location based on ROI (shift relative to topleft of ROI)
             var correctedObjects = detectedObjects.Zip(imageInfos, (dobjs, inf) =>
@@ -149,11 +191,15 @@ namespace DetectiCam.Core.Detection
 
         private IList<DnnDetectedObject[]> InternalClassifyObjects(IList<Mat> images, float detectionThreshold)
         {
+            MemoryProfiler.GetSnapshot("Before Blob");
             using var blob = CvDnn.BlobFromImages(images, scaleFactor, scaleSize, crop: false);
             nnet.SetInput(blob);
 
+            MemoryProfiler.GetSnapshot("Before Forward");
             //forward model
             nnet.Forward(outs, _outNames);
+
+            MemoryProfiler.GetSnapshot("Before Extract");
 
             if (images.Count == 1)
             {

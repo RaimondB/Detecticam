@@ -330,13 +330,17 @@ namespace DetectiCam.Core.VideoCapturing
 
         public void Dispose()
         {
-            _internalCts.Cancel();
-            StopProcessingAsync()?.Wait(2000);
+            try
+            {
+                StopProcessingAsync()?.Wait(2000);
+            }
+            finally
+            {
+                _internalCts?.Dispose();
 
-            _internalCts?.Dispose();
-
-            _image1.SafeDispose();
-            _image2.SafeDispose();
+                _image1.SafeDispose();
+                _image2.SafeDispose();
+            }
         }
     }
 }
